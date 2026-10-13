@@ -1,0 +1,19 @@
+{
+  "name": "morning-brief",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Reader app. The Worker runs first so /api, /run and /fb are handled (and key-checked) in code.
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
+  // No crons: the Free plan gives them ~10 ms CPU. The weekday run is .github/workflows/brief.yml.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "morning-brief", "database_id": "665b9368-a0ba-4522-bee6-02951d272356" }
+  ],
+  "ai": { "binding": "AI" },
+  "vars": {
+    "EMAIL_FROM": "brief@REPLACE_WITH_YOUR_EMAIL_ROUTING_DOMAIN",
+    "EMAIL_TO": "REPLACE_WITH_YOUR_VERIFIED_ADDRESS",
+    "BASE_URL": "https://morning-brief.manandoshi1301.workers.dev"
+  }
+  // Secrets (npx wrangler secret put NAME): TWELVE_DATA_KEY, FRED_KEY, SEC_USER_AGENT, ACCESS_KEY
+}
