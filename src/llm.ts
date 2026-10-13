@@ -22,8 +22,9 @@ export function parseJudgements(reply: unknown): any[] {
   if (Array.isArray(reply)) return reply;
   const s = typeof reply === "string" ? reply : JSON.stringify(reply ?? "");
   const a = s.indexOf("["), b = s.lastIndexOf("]");
-  if (a < 0 || b <= a) return [];
-  try { return JSON.parse(s.slice(a, b + 1)); } catch { return []; }
+  try { const arr = JSON.parse(s.slice(a, b + 1)); if (Array.isArray(arr) && arr.length) return arr; } catch {}
+  // Small models often write "[1]\n{...}\n\n[2]\n{...}": fall back to every flat {...} object that has an item number.
+  return (s.match(/\{[^{}]*\}/g) ?? []).flatMap((o) => { try { const j = JSON.parse(o); return j && j.i != null ? [j] : []; } catch { return []; } });
 }
 
 const clamp = (n: unknown) => Math.max(0, Math.min(10, Number(n) || 0));

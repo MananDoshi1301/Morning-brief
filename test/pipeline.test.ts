@@ -42,6 +42,7 @@ test("parses RSS and Atom", () => {
 test("model reply parsing tolerates prose around the JSON", () => {
   assert.equal(parseJudgements('Sure! [{"i":1,"summary":"s","why":"w"}] hope this helps').length, 1);
   assert.deepEqual(parseJudgements("no json"), []);
+  assert.deepEqual(parseJudgements(`[1]\n{"i": 1, "why": "w"}\n\n[2]\n{"i": 2, "why": "x"}`).map((j) => j.i), [1, 2]);
   assert.ok(score({ relevance: 10, novelty: 10, impact: 10 }, 1, 0) > score({ relevance: 10, novelty: 10, impact: 10 }, 3, 0));
 });
 
