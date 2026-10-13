@@ -2,7 +2,7 @@ import type { Judged } from "./llm.ts";
 import type { Markets } from "./markets.ts";
 import { esc, fmtTime } from "./util.ts";
 
-export type Brief = { date: string; top: Judged[]; core: Judged[]; marketNews: Judged[]; markets: Markets; missing: string[] };
+export type Brief = { date: string; top: Judged[]; core: Judged[]; ai: Judged[]; industry: Judged[]; marketNews: Judged[]; markets: Markets; missing: string[] };
 
 function item(it: Judged, fb: (id: string, v: string) => string) {
   const also = it.also.length ? ` · also covered by ${esc(it.also.join(", "))}` : "";
@@ -54,5 +54,5 @@ ${b.missing.length ? `<h2>Missing today</h2><p class="meta">${b.missing.map(esc)
 
 /** Plain-text version for search indexing. */
 export function plain(b: Brief) {
-  return [...b.core, ...b.marketNews].map((i) => `${i.title}\n${i.summary}\n${i.why}`).join("\n\n");
+  return [...b.core, ...b.ai, ...b.industry, ...b.marketNews].map((i) => `${i.title}\n${i.summary}\n${i.why}`).join("\n\n");
 }

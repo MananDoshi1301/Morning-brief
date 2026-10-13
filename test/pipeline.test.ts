@@ -58,10 +58,10 @@ test("UI data: markets are news, calendar and filings only; watchlist links stor
   const now = Date.parse("2026-10-13T06:04:00-07:00");
   const j = (id: string, title: string) => ({ id, url: `https://x.com/${id}`, title, source: "S", tier: 1, published: now, text: "", also: [],
     summary: "s", why: "w", score: 8, unconfirmed: false, topic: "T" });
-  const shown = j("a", "Oracle ships a new release"), notShown = j("b", "Nvidia earnings preview");
+  const shown = j("a", "Oracle ships a new release"), notShown = j("b", "Nvidia earnings preview"), ai = j("c", "vLLM adds a new scheduler");
   const d = toUi({
     date: "2026-10-13", generatedAt: now, window: { from: now - 24 * 3600_000, to: now }, sourcesChecked: 1,
-    core: [shown], marketNews: [], judged: [shown, notShown], top: [shown], missing: [],
+    core: [shown], ai: [ai], industry: [], marketNews: [], judged: [shown, notShown, ai], top: [ai, shown], missing: [],
     markets: { macro: [{ name: "Consumer Price Index", date: "2026-10-13" }], earnings: [{ ticker: "ORCL", name: "Oracle", time: "After Close" }],
       filings: [{ ticker: "ORCL", form: "4", date: "2026-10-12", url: "https://sec.gov/x" }], missing: [] },
   });
@@ -71,7 +71,9 @@ test("UI data: markets are news, calendar and filings only; watchlist links stor
   assert.equal(d.markets.watchlist.find((w) => w.ticker === "NVDA")!.mentions[0].inBrief, false);
   assert.equal(d.markets.calendar[1].timing, "After the close");
   assert.ok(!JSON.stringify(d.markets).match(/"(price|pct|quotes)"/)); // no prices anywhere
-  assert.equal(d.sections.ai, null);
+  assert.deepEqual(d.top.map((t) => t.section), ["AI & infra", "Core tech"]);
+  assert.equal(d.sections.ai[0].id, "c");
+  assert.deepEqual(d.sections.industry, []);
 });
 
 test("insight is kept only when it cites two or more real Top 5 items", async () => {

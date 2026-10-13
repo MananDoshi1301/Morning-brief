@@ -2,7 +2,7 @@
 
 // section: which part of the brief a source feeds (default "core").
 export type Source =
-  | { id: string; kind: "feed"; url: string; tier: 1 | 2 | 3; filter?: boolean; section?: "core" | "markets" }
+  | { id: string; kind: "feed"; url: string; tier: 1 | 2 | 3; filter?: boolean; section?: "core" | "ai" | "industry" | "markets" }
   | { id: string; kind: "hn"; tier: 3; minPoints: number; filter: true }
   | { id: string; kind: "arxiv"; categories: string[]; tier: 1; max: number; filter: true };
 
@@ -15,7 +15,7 @@ export const config = {
   llmModel: "@cf/meta/llama-3.1-8b-instruct-fast",
   maxLlmItems: 60, // keeps a run well inside the free 10k neurons/day
   minScore: 6, // 0-10; anything below is dropped even if a section ends up short
-  caps: { top: 5, core: 8, markets: 4 },
+  caps: { top: 5, core: 8, ai: 5, industry: 4, markets: 4 },
 
   // Interest keywords. Sources with `filter: true` only keep items matching one.
   topics: [
@@ -47,6 +47,18 @@ export const config = {
     { id: "Murat Demirbas", kind: "feed", url: "https://muratbuffalo.blogspot.com/feeds/posts/default", tier: 2 },
     { id: "Phil Eaton", kind: "feed", url: "https://notes.eatonphil.com/rss.xml", tier: 2 },
     { id: "Brendan Gregg", kind: "feed", url: "https://www.brendangregg.com/blog/rss.xml", tier: 2 },
+
+    // AI & infrastructure
+    { id: "OpenAI news", kind: "feed", url: "https://openai.com/news/rss.xml", tier: 1, section: "ai" },
+    { id: "vLLM releases", kind: "feed", url: "https://github.com/vllm-project/vllm/releases.atom", tier: 1, section: "ai" },
+    { id: "Hugging Face blog", kind: "feed", url: "https://huggingface.co/blog/feed.xml", tier: 2, section: "ai" },
+    { id: "SemiAnalysis", kind: "feed", url: "https://semianalysis.com/feed/", tier: 2, section: "ai" },
+
+    // Industry & culture
+    { id: "Pragmatic Engineer", kind: "feed", url: "https://newsletter.pragmaticengineer.com/feed", tier: 2, section: "industry" },
+    { id: "Charity Majors", kind: "feed", url: "https://charity.wtf/feed/", tier: 2, section: "industry" },
+    { id: "Ars Technica", kind: "feed", url: "https://feeds.arstechnica.com/arstechnica/technology-lab", tier: 2, section: "industry" },
+    { id: "The Register", kind: "feed", url: "https://www.theregister.com/headlines.atom", tier: 2, section: "industry", filter: true },
 
     // Markets: official releases and company newsrooms. News and facts only, no prices.
     { id: "Federal Reserve", kind: "feed", url: "https://www.federalreserve.gov/feeds/press_all.xml", tier: 1, section: "markets" },

@@ -68,20 +68,22 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     const judged = (await judge((m, i) => env.AI.run(m as any, i as any), candidates, votes, missing))
       .filter((j) => j.score >= config.minScore)
       .sort((a, b) => b.score - a.score);
-    const isMarket = (j: { source: string }) => sectionOf.get(j.source) === "markets";
-    const core = judged.filter((j) => !isMarket(j)).slice(0, config.caps.core);
-    const marketNews = judged.filter(isMarket).slice(0, config.caps.markets);
-    const top = [...core, ...marketNews].sort((a, b) => b.score - a.score).slice(0, config.caps.top);
+    const of = (sec: string) => judged.filter((j) => sectionOf.get(j.source) === sec);
+    const core = of("core").slice(0, config.caps.core);
+    const ai = of("ai").slice(0, config.caps.ai);
+    const industry = of("industry").slice(0, config.caps.industry);
+    const marketNews = of("markets").slice(0, config.caps.markets);
+    const top = [...core, ...ai, ...industry, ...marketNews].sort((a, b) => b.score - a.score).slice(0, config.caps.top);
 
     const connection = await insight((m, i) => env.AI.run(m as any, i as any), top);
     const markets = await fetchMarkets(env, now, since);
     missing.push(...markets.missing);
 
     // render + store (the app reads `data`; the email is `html`)
-    const brief = { date, top, core, marketNews, markets, missing };
+    const brief = { date, top, core, ai, industry, marketNews, markets, missing };
     const html = render(brief, env.BASE_URL, env.ACCESS_KEY);
-    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: config.sources.length + 3, core, marketNews, judged, top, markets, missing, insight: connection });
-    const shown = new Set([...core, ...marketNews].map((c) => c.id));
+    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: config.sources.length + 3, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
+    const shown = new Set([...core, ...ai, ...industry, ...marketNews].map((c) => c.id));
     await env.DB.batch([
       ...judged.map((j) => env.DB.prepare(
         `INSERT OR IGNORE INTO items (id, brief_date, url, title, source, topic, published, summary, why, score, shown)

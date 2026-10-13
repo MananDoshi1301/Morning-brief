@@ -33,20 +33,20 @@ const story = (j: Judged) => ({
 
 export function toUi(a: {
   date: string; generatedAt: number; window: { from: number; to: number }; sourcesChecked: number;
-  core: Judged[]; marketNews: Judged[]; judged: Judged[]; top: Judged[]; markets: Markets; missing: string[];
+  core: Judged[]; ai: Judged[]; industry: Judged[]; marketNews: Judged[]; judged: Judged[]; top: Judged[]; markets: Markets; missing: string[];
   insight?: { text: string; refs: number[] } | null;
 }) {
   const m = a.markets;
-  const shown = new Set([...a.core, ...a.marketNews].map((j) => j.id));
-  const marketIds = new Set(a.marketNews.map((j) => j.id));
+  const shown = new Set([...a.core, ...a.ai, ...a.industry, ...a.marketNews].map((j) => j.id));
+  const label = new Map<string, string>([...a.ai.map((j) => [j.id, "AI & infra"] as const), ...a.industry.map((j) => [j.id, "Industry"] as const), ...a.marketNews.map((j) => [j.id, "Markets"] as const)]);
 
   return {
     date: a.date, status: "built" as string, generatedAt: a.generatedAt, sentAt: null as number | null,
     window: a.window, sourcesChecked: a.sourcesChecked, missing: a.missing,
-    top: a.top.map((t) => ({ id: t.id, section: marketIds.has(t.id) ? "Markets" : "Core tech" })),
+    top: a.top.map((t) => ({ id: t.id, section: label.get(t.id) ?? "Core tech" })),
     // refs are 1-based Top 5 ranks; null means no connection worth stating
     insight: a.insight ?? null,
-    sections: { core: a.core.map(story), ai: null, industry: null }, // null = section not built yet
+    sections: { core: a.core.map(story), ai: a.ai.map(story), industry: a.industry.map(story) },
     deepRead: null,
     markets: {
       news: a.marketNews.map(story),
