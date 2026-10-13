@@ -47,7 +47,9 @@ export async function judge(run: Run, items: Item[], votes: Record<string, numbe
         max_tokens: 1800,
         temperature: 0.2,
       });
-      for (const j of parseJudgements(res?.response)) {
+      const parsed = parseJudgements(res?.response);
+      if (!parsed.length) notes.push(`model reply unparsable on ${batch.length} items: ${JSON.stringify(res?.response ?? res).slice(0, 300)}`);
+      for (const j of parsed) {
         const it = batch[Number(j.i) - 1];
         if (!it || !j.summary || !j.why) continue; // no "why it matters" line, no slot in the brief
         out.push({
