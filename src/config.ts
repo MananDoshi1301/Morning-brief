@@ -52,7 +52,6 @@ export const config = {
     { id: "OpenAI news", kind: "feed", url: "https://openai.com/news/rss.xml", tier: 1, section: "ai" },
     { id: "vLLM releases", kind: "feed", url: "https://github.com/vllm-project/vllm/releases.atom", tier: 1, section: "ai" },
     { id: "Hugging Face blog", kind: "feed", url: "https://huggingface.co/blog/feed.xml", tier: 2, section: "ai" },
-    { id: "SemiAnalysis", kind: "feed", url: "https://semianalysis.com/feed/", tier: 2, section: "ai" },
 
     // Industry & culture
     { id: "Pragmatic Engineer", kind: "feed", url: "https://newsletter.pragmaticengineer.com/feed", tier: 2, section: "industry" },
