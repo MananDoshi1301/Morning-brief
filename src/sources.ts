@@ -3,7 +3,8 @@ import type { Source } from "./config.ts";
 import { canonical, hash, strip, type Item } from "./util.ts";
 
 const UA = "MorningBrief/0.1 (personal digest)";
-const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", textNodeName: "#text" });
+// Feeds full of &amp; etc. trip the default 1000-expansion cap; the length cap still guards against entity bombs.
+const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_", textNodeName: "#text", processEntities: { maxTotalExpansions: 1e6, maxExpandedLength: 1e7 } });
 const arr = <T>(x: T | T[] | undefined): T[] => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const txt = (x: any): string => (typeof x === "object" && x ? (x["#text"] ?? "") : String(x ?? ""));
 

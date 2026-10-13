@@ -51,7 +51,7 @@ export const config = {
     // Markets: official releases and company newsrooms. News and facts only, no prices.
     { id: "Federal Reserve", kind: "feed", url: "https://www.federalreserve.gov/feeds/press_all.xml", tier: 1, section: "markets" },
     { id: "SEC press releases", kind: "feed", url: "https://www.sec.gov/news/pressreleases.rss", tier: 1, section: "markets", filter: true },
-    { id: "BLS releases", kind: "feed", url: "https://www.bls.gov/feed/news_release.rss", tier: 1, section: "markets" },
+    { id: "BLS releases", kind: "feed", url: "https://www.bls.gov/feed/bls_latest.rss", tier: 1, section: "markets" },
     { id: "NVIDIA newsroom", kind: "feed", url: "https://nvidianews.nvidia.com/releases.xml", tier: 1, section: "markets" },
     { id: "Microsoft news", kind: "feed", url: "https://news.microsoft.com/feed/", tier: 1, section: "markets", filter: true },
   ] as Source[],
