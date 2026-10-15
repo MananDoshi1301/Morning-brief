@@ -37,6 +37,25 @@ export function parseFeed(body: string, src: { id: string; tier: number }): Item
     });
 }
 
+export type Video = { id: string; channel: string; topic: string; title: string; url: string; thumb: string; description: string; published: number; views: number; short: number };
+
+/** YouTube channel Atom feed (latest ~15 uploads) into Videos. */
+export function parseVideos(body: string, ch: { name: string; topic: string }): Video[] {
+  return arr(xml.parse(body)?.feed?.entry).map((e: any) => {
+    const g = e["media:group"] ?? {}, href = arr(e.link)[0]?.["@_href"] ?? "";
+    return {
+      id: String(e["yt:videoId"]), channel: ch.name, topic: ch.topic, title: strip(txt(e.title)), url: href,
+      thumb: g["media:thumbnail"]?.["@_url"] ?? "", description: strip(txt(g["media:description"])).slice(0, 400),
+      published: Date.parse(e.published) || 0, views: Number(g["media:community"]?.["media:statistics"]?.["@_views"]) || 0,
+      short: href.includes("/shorts/") ? 1 : 0,
+    };
+  }).filter((v) => v.id && v.title);
+}
+
+export async function fetchVideos(ch: { name: string; channelId: string; topic: string }) {
+  return parseVideos(await (await get(`https://www.youtube.com/feeds/videos.xml?channel_id=${ch.channelId}`)).text(), ch);
+}
+
 async function get(url: string, headers: Record<string, string> = {}) {
   const r = await fetch(url, { headers: { "User-Agent": UA, ...headers } });
   if (!r.ok) throw new Error(`${r.status} ${url}`);

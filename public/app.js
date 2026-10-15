@@ -31,6 +31,7 @@
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
+    video: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>',
   };
   const ic = (n) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
 
@@ -412,6 +413,47 @@
             <button class="jump" data-act="unsave" data-id="${esc(s.id)}">Remove</button></p></div></div>`).join("")}`;
   }
 
+  // ---------- video library ----------
+  const VSORT = { new: ["Newest", (a, b) => b.published - a.published], old: ["Oldest", (a, b) => a.published - b.published], views: ["Most viewed", (a, b) => b.views - a.views] };
+  const views = (n) => n >= 1e6 ? `${(n / 1e6).toFixed(1)}M views` : n >= 1e3 ? `${Math.round(n / 1e3)}K views` : `${n} views`;
+  async function videosPage() {
+    const head = `<header class="page-head"><h1>Videos</h1><p>Every upload from the channels in <code>src/config.ts</code>, collected with each morning's run. Opening a video marks it watched.</p></header>`;
+    if (S.mode !== "live") return head + notice("", "info", "<b>The video library needs the live app.</b> The prototype has no sample videos.");
+    if (!S.videos) { try { S.videos = (await getJSON("/api/videos")).videos; } catch (e) { return head + notice("bad", "alert", `<b>Couldn't load videos.</b> ${esc(e.message)}`); } }
+    const all = S.videos, f = vf();
+    const q = f.q.toLowerCase();
+    const shown = all.filter((v) => (!f.topic || v.topic === f.topic) && (!f.channel || v.channel === f.channel) && (!f.hideWatched || !v.watched)
+      && (f.shorts || !v.short) && (!q || `${v.title} ${v.channel} ${v.description}`.toLowerCase().includes(q))).sort(VSORT[f.sort][1]);
+    const opt = (vals, cur) => vals.map((v) => `<option ${v === cur ? "selected" : ""}>${esc(v)}</option>`).join("");
+    const unwatched = all.filter((v) => !v.watched && !v.short).length;
+    return `${head}
+      <form class="toolbar" id="video-form" role="search"><label class="vh" for="v-q">Search videos</label>
+        <input type="search" id="v-q" value="${esc(f.q)}" placeholder="Search titles, channels, descriptions"><button class="icon-btn" type="submit">${ic("search")}<span>Search</span></button></form>
+      <div class="toolbar" id="video-filters">
+        <label for="v-topic">Topic <select id="v-topic"><option value="">All</option>${opt([...new Set(all.map((v) => v.topic))].sort(), f.topic)}</select></label>
+        <label for="v-channel">Channel <select id="v-channel"><option value="">All</option>${opt([...new Set(all.map((v) => v.channel))].sort(), f.channel)}</select></label>
+        <label for="v-sort">Sort <select id="v-sort">${Object.entries(VSORT).map(([k, [l]]) => `<option value="${k}" ${k === f.sort ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label for="v-hide"><input type="checkbox" id="v-hide" ${f.hideWatched ? "checked" : ""}> Hide watched</label>
+        <label for="v-shorts"><input type="checkbox" id="v-shorts" ${f.shorts ? "checked" : ""}> Include Shorts</label>
+        <span class="vcount">${count(shown.length, "video", "videos")} · ${unwatched} unwatched</span></div>
+      ${!all.length ? emptyBrief("No videos yet", "The library fills on the next morning run.")
+        : !shown.length ? emptyBrief("No videos match", "Change the search or filters above.")
+        : `<div class="vgrid">${shown.slice(0, f.limit).map((v) => `<article class="vcard${v.watched ? " watched" : ""}">
+          <a class="vthumb" href="${esc(v.url)}" target="_blank" rel="noopener" data-act="vopen" data-vid="${esc(v.id)}" tabindex="-1" aria-hidden="true"><img src="${esc(v.thumb)}" alt="" loading="lazy">${v.watched ? `<span class="vbadge">Watched</span>` : ""}</a>
+          <div class="vbody"><h3><a href="${esc(v.url)}" target="_blank" rel="noopener" data-act="vopen" data-vid="${esc(v.id)}">${esc(v.title)}</a></h3>
+          <p class="sub"><span>${esc(v.channel)}</span><span class="chip">${esc(v.topic)}</span></p>
+          <p class="sub"><span>${esc(tDay(v.published))}</span>${v.views ? `<span>${views(v.views)}</span>` : ""}
+            <button class="jump" data-act="vwatch" data-vid="${esc(v.id)}">${v.watched ? "Mark unwatched" : "Mark watched"}</button></p></div></article>`).join("")}</div>
+          ${shown.length > f.limit ? `<p class="vmore"><button class="icon-btn" data-act="vmore">Show more (${shown.length - f.limit} left)</button></p>` : ""}`}`;
+  }
+  async function setWatched(id, watched, rerender) {
+    const v = S.videos?.find((x) => x.id === id); if (!v || v.watched === watched) return;
+    v.watched = watched;
+    try { await getJSON(`/api/videos/${encodeURIComponent(id)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ watched }) }); }
+    catch (e) { v.watched = !watched; say(`Couldn't save that change (${e.message}). Try again.`); }
+    if (rerender) render();
+  }
+
   function readOnlyNote() {
     return notice("", "info", `<b>These settings come from <code>src/config.ts</code>.</b> Edit that file and deploy to change them; changes apply to future briefs, not past issues. In-app editing isn't connected yet.`);
   }
@@ -466,7 +508,7 @@
   }
 
   // ---------- chrome ----------
-  const NAV = [["today", "Today", "today"], ["archive", "Archive", "archive"], ["saved", "Saved for later", "saved"], ["watchlist", "Watchlist", "watch"], ["sources", "Sources & topics", "sources"], ["settings", "Settings", "settings"]];
+  const NAV = [["today", "Today", "today"], ["videos", "Videos", "video"], ["archive", "Archive", "archive"], ["saved", "Saved for later", "saved"], ["watchlist", "Watchlist", "watch"], ["sources", "Sources & topics", "sources"], ["settings", "Settings", "settings"]];
 
   function navHTML() {
     const b = S.brief, cur = S.route.startsWith("brief-") ? "archive" : S.route;
@@ -535,6 +577,7 @@
     else if (S.route === "today" || S.route.startsWith("brief-")) html = todayPage();
     else if (S.route === "archive") html = await archivePage();
     else if (S.route === "saved") html = await savedPage();
+    else if (S.route === "videos") html = await videosPage();
     else if (S.route === "watchlist") html = watchlistPage();
     else if (S.route === "sources") html = sourcesPage();
     else if (S.route === "settings") html = settingsPage();
@@ -594,6 +637,10 @@
       if (open) $(".nav-link", nav)?.focus();
       return;
     }
+    // Opening a video counts as watching it; the card updates when you come back to the tab.
+    if (a === "vopen") { setWatched(t.dataset.vid, true, false); return; }
+    if (a === "vwatch") { const v = S.videos.find((x) => x.id === t.dataset.vid); return setWatched(v.id, !v.watched, true); }
+    if (a === "vmore") { S.videoFilter = { ...vf(), limit: vf().limit + 48 }; return render(); }
     const cur = S.items[id] || {};
     if (a === "save") return act(id, { saved: !cur.saved }, cur.saved ? "Removed from saved" : "Saved for later");
     if (a === "up" || a === "down") {
@@ -608,7 +655,12 @@
     if (a === "unsave") { await act(id, { saved: false }, "Removed from saved"); return render(); }
   });
 
+  const vf = () => S.videoFilter || { q: "", topic: "", channel: "", sort: "new", hideWatched: true, shorts: false, limit: 48 };
   document.addEventListener("change", (e) => {
+    if (["v-topic", "v-channel", "v-sort", "v-hide", "v-shorts"].includes(e.target.id)) {
+      S.videoFilter = { ...vf(), topic: $("#v-topic").value, channel: $("#v-channel").value, sort: $("#v-sort").value, hideWatched: $("#v-hide").checked, shorts: $("#v-shorts").checked, limit: 48 };
+      return render();
+    }
     if (e.target.id === "variant") { S.variant = e.target.value; load(); }
     if (["f-topic", "f-source", "f-read"].includes(e.target.id)) {
       S.savedFilter = { topic: $("#f-topic").value, source: $("#f-source").value, showRead: $("#f-read").checked };
@@ -616,6 +668,7 @@
     }
   });
   document.addEventListener("submit", (e) => {
+    if (e.target.id === "video-form") { e.preventDefault(); S.videoFilter = { ...vf(), q: $("#v-q").value.trim(), limit: 48 }; render().then(() => $("#v-q")?.focus()); return; }
     if (e.target.id !== "archive-form") return;
     e.preventDefault(); S.archiveQ = $("#archive-q").value.trim(); render().then(() => $("#archive-q")?.focus());
   });
@@ -667,6 +720,7 @@
   }
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("hashchange", route);
+  addEventListener("visibilitychange", () => { if (!document.hidden && S.route === "videos") render(); }); // show videos opened in another tab as watched
 
   const saved = store.get("mb-theme");
   if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;

@@ -3,7 +3,7 @@ import { insight, judge } from "./llm.ts";
 import { fetchMarkets, type MarketEnv } from "./markets.ts";
 import { plain, render } from "./render.ts";
 import { toUi } from "./ui.ts";
-import { fetchSource } from "./sources.ts";
+import { fetchSource, fetchVideos } from "./sources.ts";
 import { dedupe, local, matchesAny, windowMs, type Item } from "./util.ts";
 
 // No Worker-only imports here: scripts/run-brief.ts runs this in Node with REST-backed DB/AI.
@@ -103,4 +103,21 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
       .bind(String(e), date).run();
     throw e;
   }
+}
+
+/** Add new uploads to the video library; refresh view counts and titles of ones already there (never `watched`). */
+export async function refreshVideos(db: D1Database) {
+  const missing: string[] = [];
+  const vids = (await Promise.all(config.videos.map((ch) => fetchVideos(ch).catch((e) => (missing.push(`${ch.name} (${(e as Error).message})`), []))))).flat();
+  const cols = ["id", "channel", "topic", "title", "url", "thumb", "description", "published", "views", "short"] as const;
+  const stmts = [];
+  for (let i = 0; i < vids.length; i += 9) { // D1 allows 100 bound params per statement
+    const chunk = vids.slice(i, i + 9);
+    stmts.push(db.prepare(
+      `INSERT INTO videos (${cols.join(",")}) VALUES ${chunk.map(() => `(${cols.map(() => "?").join(",")})`).join(",")}
+       ON CONFLICT(id) DO UPDATE SET title=excluded.title, views=excluded.views, thumb=excluded.thumb`,
+    ).bind(...chunk.flatMap((v) => cols.map((c) => v[c]))));
+  }
+  if (stmts.length) await db.batch(stmts);
+  return { videos: vids.length, missing };
 }

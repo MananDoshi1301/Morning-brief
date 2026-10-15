@@ -84,3 +84,14 @@ test("insight is kept only when it cites two or more real Top 5 items", async ()
   assert.equal(parseInsight('{"insight":null}', 5), null);
   assert.equal(parseInsight("no json here", 5), null);
 });
+
+test("YouTube feed entries become library videos; shorts are flagged", async () => {
+  const { parseVideos } = await import("../src/sources.ts");
+  const entry = (id: string, path: string) => `<entry><yt:videoId>${id}</yt:videoId><title>T ${id}</title>
+    <link rel="alternate" href="https://www.youtube.com/${path}"/><published>2026-10-14T17:48:10+00:00</published>
+    <media:group><media:thumbnail url="https://i2.ytimg.com/vi/${id}/hqdefault.jpg"/><media:description>About &amp; more</media:description>
+    <media:community><media:statistics views="1223318"/></media:community></media:group></entry>`;
+  const v = parseVideos(`<feed xmlns:yt="y" xmlns:media="m">${entry("a1", "watch?v=a1")}${entry("b2", "shorts/b2")}</feed>`, { name: "Ch", topic: "AI" });
+  assert.deepEqual(v.map((x) => [x.id, x.short, x.views, x.description]), [["a1", 0, 1223318, "About & more"], ["b2", 1, 1223318, "About & more"]]);
+  assert.equal(v[0].published, Date.parse("2026-10-14T17:48:10Z"));
+});

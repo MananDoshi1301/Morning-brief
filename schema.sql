@@ -36,3 +36,18 @@ CREATE TABLE IF NOT EXISTS feedback (
   reason TEXT,                    -- optional "why" after a thumbs down
   created INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS videos (
+  id TEXT PRIMARY KEY,            -- YouTube video id
+  channel TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  thumb TEXT,
+  description TEXT,
+  published INTEGER NOT NULL,
+  views INTEGER NOT NULL DEFAULT 0,  -- refreshed while the video is still in its channel's feed
+  short INTEGER NOT NULL DEFAULT 0,
+  watched INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS videos_published ON videos(published);
