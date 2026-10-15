@@ -1,7 +1,7 @@
 // Weekday pipeline run outside the Worker (Free plan crons get ~10 ms CPU).
 // Talks to the same D1 and Workers AI over Cloudflare's REST API. No email: read the brief in the app.
 // Usage: node --experimental-strip-types scripts/run-brief.ts   (FORCE=1 to skip the time gate and rebuild today)
-import { buildBrief, refreshVideos, type PipelineEnv } from "../src/pipeline.ts";
+import { buildBrief, type PipelineEnv } from "../src/pipeline.ts";
 import { local } from "../src/util.ts";
 
 const need = (k: string) => process.env[k] || (() => { throw new Error(`missing env ${k}`); })();
@@ -46,4 +46,3 @@ if (!force && (weekday === "Sat" || weekday === "Sun" || hour !== 5)) {
   process.exit(0);
 }
 console.log(JSON.stringify(await buildBrief(env, now, force), null, 2));
-console.log(JSON.stringify(await refreshVideos(env.DB)));

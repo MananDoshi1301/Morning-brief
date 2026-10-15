@@ -396,16 +396,3 @@ kbd { font: 500 12.5px/1 var(--sans); border: 1px solid var(--line-strong); bord
   .deep h3 { font-size: 24px; }
 }
 @media print { .nav, .rail, .topbar, .actions, .demo-bar { display: none !important; } .shell { display: block; } }
-
-/* ---------- Videos ---------- */
-.vcount { margin-left: auto; font-size: 13.5px; color: var(--text-3); }
-.vgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s5) var(--s4); padding-top: var(--s2); }
-.vcard { display: grid; gap: var(--s2); align-content: start; }
-.vcard.watched .vthumb img { opacity: .5; }
-.vthumb { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: var(--soft); }
-.vthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.vbadge { position: absolute; left: 8px; bottom: 8px; padding: 1px 7px; border-radius: 4px; background: rgba(0,0,0,.75); color: #fff; font-size: 12px; }
-.vbody h3 { font: 500 16px/1.35 var(--serif); }
-.vbody h3 a { color: var(--text); }
-.vbody .sub { font-size: 13px; color: var(--text-2); margin-top: 4px; display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); align-items: center; }
-.vmore { text-align: center; padding: var(--s5) 0; }

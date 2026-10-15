@@ -73,21 +73,6 @@ export const config = {
     "Producer Price Index", "Gross Domestic Product", "FOMC", "Retail",
     "Job Openings", "Unemployment Insurance Weekly Claims",
   ],
-  // Video library: YouTube channel feeds (no API key). Find a channel's id in its page source ("channelId").
-  videos: [
-    { name: "CMU Database Group", channelId: "UCHnBsf2rH-K7pn09rb3qvkA", topic: "Databases" },
-    { name: "Hussein Nasser", channelId: "UC_ML5xP23TOWKUcc-oAE_Eg", topic: "Databases" },
-    { name: "InfoQ", channelId: "UCkQX1tChV7Z7l1LFF4L9j_g", topic: "Systems" },
-    { name: "Strange Loop", channelId: "UC_QIfHvN9auy2CoOdSfMWDw", topic: "Systems" },
-    { name: "ByteByteGo", channelId: "UCZgt6AzoyjslHTC9dz0UoTw", topic: "Systems" },
-    { name: "Computerphile", channelId: "UC9-y-6csu5WGm29I7JiwpnA", topic: "Systems" },
-    { name: "Andrej Karpathy", channelId: "UCXUPKJO5MZQN11PqgIvyuvQ", topic: "AI" },
-    { name: "Fireship", channelId: "UCsBjURrPoezykLs9EqgamOA", topic: "AI" },
-    { name: "Asianometry", channelId: "UC1LpsuAUaKoMzzJSEt5WImw", topic: "Industry" },
-    { name: "Y Combinator", channelId: "UCcefcZRL2oaA_uBNeo5UOWg", topic: "Industry" },
-    { name: "Bloomberg Television", channelId: "UCIALMKvObZNtJ6AmdCLP7Lg", topic: "Markets" },
-  ],
-
   watchlist: [
     { ticker: "ORCL", cik: 1341439, names: ["Oracle"] },
     { ticker: "MSFT", cik: 789019, names: ["Microsoft", "Azure"] },

@@ -91,22 +91,6 @@ export async function api(req: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
 
-  if (url.pathname === "/api/videos" && req.method === "GET") {
-    // ponytail: whole library in one response, filtered in the browser; page it if it passes a few thousand rows.
-    const r = await db.prepare(`SELECT id, channel, topic, title, url, thumb, description, published, views, short, watched FROM videos ORDER BY published DESC LIMIT 3000`)
-      .all<Record<string, unknown>>();
-    return json({ videos: r.results.map((v) => ({ ...v, short: !!v.short, watched: !!v.watched })) });
-  }
-
-  const vid = url.pathname.match(/^\/api\/videos\/([\w-]+)$/);
-  if (vid && req.method === "POST") {
-    const body = (await req.json().catch(() => null)) as { watched?: boolean } | null;
-    if (typeof body?.watched !== "boolean") return json({ error: "Expected {watched: boolean}" }, 400);
-    const r = await db.prepare(`UPDATE videos SET watched = ? WHERE id = ?`).bind(body.watched ? 1 : 0, vid[1]).run();
-    if (!r.meta.changes) return json({ error: "Unknown video" }, 404);
-    return json({ ok: true });
-  }
-
   if (url.pathname === "/api/config") {
     return json({
       watchlist: config.watchlist.map((w) => ({ ticker: w.ticker, names: w.names })),
