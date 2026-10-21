@@ -92,3 +92,9 @@ test("release-noise filter drops bare version announcements only", async () => {
   for (const t of ["Google Cloud says a 'power event' caused today's outage", "How we scaled Postgres to 10 TB", "Migrating 119 TB from Exadata"])
     assert.ok(!config.releaseNoise.test(t), t);
 });
+
+test("event grouping reply: only valid groups and numbers survive", async () => {
+  const { parseEvents } = await import("../src/llm.ts");
+  assert.deepEqual(parseEvents('Sure: {"same": [[1, 4], [2], [3, 9]], "old": [5, 0, "x"]}', 6), { same: [[1, 4]], old: [5] });
+  assert.deepEqual(parseEvents("no json here", 6), { same: [], old: [] });
+});

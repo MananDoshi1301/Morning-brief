@@ -25,7 +25,7 @@ const EARNINGS_TIME: Record<string, string> = { "Before Open": "Before the open"
 const story = (j: Judged) => ({
   id: j.id, url: j.url, title: j.title, source: j.source, sourceType: SOURCE_TYPE[j.tier], tier: j.tier,
   published: j.published || null, topic: j.topic, summary: j.summary, why: j.why,
-  unconfirmed: j.unconfirmed, also: j.also,
+  unconfirmed: j.unconfirmed, also: j.also, related: j.related ?? [],
   ...(j.paper ? { kind: "paper", paper: j.paper } : {}),
   ...(j.incident ? { incident: j.incident } : {}),
   ...(j.release ? { release: j.release } : {}),

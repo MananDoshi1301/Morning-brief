@@ -205,6 +205,7 @@
       <p class="story-sum">${esc(s.summary || s.paper?.idea || "")}</p>
       ${whyHTML(s.why)}
       ${notesHTML(s)}
+      ${s.related?.length ? `<p class="related">Also covered by ${s.related.map((r) => `<a href="${esc(r.url)}" target="_blank" rel="noopener" title="${esc(r.title)}">${esc(r.source)}</a>`).join(", ")}</p>` : ""}
       <div class="story-foot">${metaHTML(s)}${actionsHTML(s)}</div>
     </article>`;
   }

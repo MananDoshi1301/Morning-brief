@@ -338,6 +338,8 @@ kbd { font: 500 12.5px/1 var(--sans); border: 1px solid var(--line-strong); bord
 .ed .story-sum { font-size: 16px; }
 .ed .is-lead .story-title { font-size: 28px; line-height: 1.2; letter-spacing: -0.015em; }
 .ed .is-lead .story-sum { font-size: 17px; }
+.related { font-size: 13.5px; color: var(--text-3); }
+.related a { color: var(--accent); }
 .story-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--s3); margin-top: 4px; }
 .ed .story-meta { font-size: 13px; }
 .ed .actions { margin: 0; }

@@ -4,7 +4,7 @@
 export type Source =
   | { id: string; kind: "feed"; url: string; tier: 1 | 2 | 3; filter?: boolean; section?: "core" | "ai" | "industry" | "markets" }
   | { id: string; kind: "hn"; tier: 3; minPoints: number; filter: true }
-  | { id: string; kind: "arxiv"; categories: string[]; tier: 1; max: number; filter: true };
+  | { id: string; kind: "arxiv"; categories: string[]; tier: 2; max: number; filter: true };
 
 export const config = {
   timezone: "America/Los_Angeles",
@@ -15,7 +15,8 @@ export const config = {
   llmModel: "@cf/meta/llama-3.1-8b-instruct-fast",
   maxLlmItems: 120, // ~15 model calls; still a small share of the free 10k neurons/day
   minScore: 6, // 0-10; anything below is dropped even if a section ends up short
-  perSource: 3, // no one source fills a section (arXiv alone can bring 60 papers)
+  perSource: 3, // no one source fills a section
+  papersMax: 2, // arXiv papers per issue, shown last in Core tech
   // Bare version announcements ("OpenBSD 8.0 released"): dropped before the model sees them.
   releaseNoise: /\b\d+(\.\d+)+\b.*\b(released|is out|now available)\b|^(release|version) v?\d/i,
   caps: { top: 5, core: 14, ai: 4, industry: 5, markets: 0 },
@@ -38,7 +39,7 @@ export const config = {
   sources: [
     { id: "Hacker News", kind: "hn", tier: 3, minPoints: 150, filter: true },
     { id: "Lobsters", kind: "feed", url: "https://lobste.rs/t/databases,distributed,linux,compilers,performance.rss", tier: 3 },
-    { id: "arXiv", kind: "arxiv", categories: ["cs.DB", "cs.DC", "cs.OS"], tier: 1, max: 60, filter: true },
+    { id: "arXiv", kind: "arxiv", categories: ["cs.DB", "cs.DC", "cs.OS"], tier: 2, max: 30, filter: true },
     { id: "LWN", kind: "feed", url: "https://lwn.net/headlines/rss", tier: 2, filter: true },
     { id: "PostgreSQL", kind: "feed", url: "https://www.postgresql.org/news.rss", tier: 1 },
 

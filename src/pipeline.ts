@@ -1,10 +1,11 @@
 import { config } from "./config.ts";
-import { insight, judge } from "./llm.ts";
+import { insight, judge, mergeEvents } from "./llm.ts";
 import type { MarketEnv } from "./markets.ts";
 import { plain, render } from "./render.ts";
 import { toUi } from "./ui.ts";
 import { fetchSource } from "./sources.ts";
 import { dedupe, local, matchesAny, windowMs, type Item } from "./util.ts";
+import type { Judged } from "./llm.ts";
 
 // No Worker-only imports here: scripts/run-brief.ts runs this in Node with REST-backed DB/AI.
 export interface PipelineEnv extends MarketEnv {
@@ -65,18 +66,24 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     const votes = Object.fromEntries((await env.DB.prepare(
       `SELECT source, SUM(vote) v FROM feedback GROUP BY source`).all<{ source: string; v: number }>())
       .results.map((r) => [r.source, r.v]));
-    const judged = (await judge((m, i) => env.AI.run(m as any, i as any), candidates, votes, missing))
+    const run = (m: string, i: unknown) => env.AI.run(m as any, i as any);
+    const earlier = (await env.DB.prepare(
+      `SELECT title FROM items WHERE shown = 1 AND brief_date < ? ORDER BY brief_date DESC, score DESC LIMIT 40`,
+    ).bind(date).all<{ title: string }>()).results.map((r) => r.title);
+    const judged = await mergeEvents(run, (await judge(run, candidates, votes, missing))
       .filter((j) => j.score >= config.minScore)
-      .sort((a, b) => b.score - a.score);
+      .sort((a, b) => b.score - a.score), earlier, missing);
     const of = (sec: string) => {
       const n: Record<string, number> = {};
-      return judged.filter((j) => sectionOf.get(j.source) === sec && (n[j.source] = (n[j.source] ?? 0) + 1) <= config.perSource);
+      return judged.filter((j) => sectionOf.get(j.source) === sec && (n[j.source] = (n[j.source] ?? 0) + 1) <= (isPaper(j) ? config.papersMax : config.perSource));
     };
-    const core = of("core").slice(0, config.caps.core);
+    const isPaper = (j: Judged) => j.source === "arXiv";
+    // Papers come last in Core tech and never lead: research has its own app.
+    const core = of("core").slice(0, config.caps.core).sort((a, b) => Number(isPaper(a)) - Number(isPaper(b)));
     const ai = of("ai").slice(0, config.caps.ai);
     const industry = of("industry").slice(0, config.caps.industry);
     const marketNews = of("markets").slice(0, config.caps.markets);
-    const top = [...core, ...ai, ...industry, ...marketNews].sort((a, b) => b.score - a.score).slice(0, config.caps.top);
+    const top = [...core, ...ai, ...industry, ...marketNews].filter((j) => !isPaper(j)).sort((a, b) => b.score - a.score).slice(0, config.caps.top);
 
     const connection = await insight((m, i) => env.AI.run(m as any, i as any), top);
     // ponytail: markets are off until investing comes back; fetchMarkets in markets.ts still works, call it here to restore.
