@@ -89,7 +89,6 @@ export const config = {
     { id: "Simon Willison", kind: "feed", url: "https://simonwillison.net/atom/everything/", tier: 2, section: "ai" },
     { id: "Latent Space", kind: "feed", url: "https://www.latent.space/feed", tier: 2, section: "ai" },
     { id: "Interconnects", kind: "feed", url: "https://www.interconnects.ai/feed", tier: 2, section: "ai" },
-    { id: "Import AI", kind: "feed", url: "https://importai.substack.com/feed", tier: 2, section: "ai" },
     { id: "TechCrunch AI", kind: "feed", url: "https://techcrunch.com/category/artificial-intelligence/feed/", tier: 2, section: "ai" },
     { id: "The Verge AI", kind: "feed", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", tier: 2, section: "ai" },
     { id: "MIT Technology Review AI", kind: "feed", url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", tier: 2, section: "ai" },
