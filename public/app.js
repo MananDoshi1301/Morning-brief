@@ -29,6 +29,7 @@
     moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
     key: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h1M11 10h1M15 10h1M8 14h8"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    check: '<path d="M5 12l5 5L20 7"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
   };
@@ -184,33 +185,27 @@
   const pub = (ms) => (ms ? `<time datetime="${new Date(ms).toISOString()}">${esc(tDayTime(ms))} PT</time>` : `<span class="muted">publication time not given</span>`);
   // Real publisher icon from the story's own domain; hidden if it doesn't load. Never shown for fictional prototype links.
   const fav = (url) => (S.mode === "live" && host(url) ? `<img class="fav" src="https://icons.duckduckgo.com/ip3/${esc(host(url))}.ico" alt="" width="14" height="14" loading="lazy" onerror="this.remove()">` : "");
-  const whyHTML = (why) => `<p class="story-why"><span class="why-k">Why it matters</span> ${esc(why)}</p>`;
+  const whyHTML = (why) => `<p class="story-why"><b>Why it matters:</b> ${esc(why)}</p>`;
 
-  function variantOf(s, section) {
-    if (s.kind === "paper" && s.paper) return "paper";
-    if (section === "markets") return "market";
-    if (s.incident || /postmortem|incident|outage/i.test(s.topic || "") || /postmortem/i.test(s.title)) return "postmortem";
-    if (s.release) return "release";
-    if (section === "industry") return "industry";
-    return "std";
+  // Paper / incident / release detail stays one tap away; every story keeps the same shape.
+  function notesHTML(s) {
+    const rows = s.paper ? [["Problem", s.paper.problem], ["Key idea", s.paper.idea], ["In practice", s.paper.practice]]
+      : s.incident ? [["Trigger", s.incident.trigger], ["Failure", s.incident.failure], ["Lesson", s.incident.lesson]]
+      : s.release ? [["What changed", s.release.changed], ["Consequence", s.release.consequence]] : null;
+    if (!rows) return "";
+    return `<details class="notes"><summary>${s.paper ? "Paper" : s.incident ? "Incident" : "Release"} notes</summary><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>`;
   }
-  const VARIANT_LABEL = { paper: [ic("sources"), "Research paper"], postmortem: [ic("alert"), "Postmortem"], release: [ic("tag"), "Release"] };
-  // A stage diagram only when the model found every stage in the source text; otherwise the plain summary.
-  const steps = (cls, pairs) => `<ol class="steps ${cls}">${pairs.map(([k, v]) => `<li><span class="step-k">${k}</span><span class="step-v">${esc(v)}</span></li>`).join("")}</ol>`;
+  const kickerHTML = (s, pre = "") => `<div class="kicker">${pre}${s.topic ? `<span class="topic">${esc(s.topic)}</span>` : ""}${s.unconfirmed ? `<span class="chip flag" title="Single-source or unconfirmed report">Unconfirmed</span>` : ""}</div>`;
+  const metaHTML = (s) => `<p class="story-meta">${fav(s.url)}<span class="src">${esc(s.source || "Unknown source")}</span> · ${pub(s.published)}${s.also?.length ? ` <span class="muted">· also covered by ${esc(s.also.join(", "))}</span>` : ""}</p>`;
 
   function storyHTML(s, section) {
-    const v = variantOf(s, section);
-    const label = VARIANT_LABEL[v];
-    const body = v === "paper" ? steps("flow", [["Problem", s.paper.problem], ["Key idea", s.paper.idea], ["Practical implication", s.paper.practice]])
-      : v === "postmortem" && s.incident ? `<p class="story-sum">${esc(s.summary)}</p>${steps("flow incident", [["Trigger", s.incident.trigger], ["Failure", s.incident.failure], ["Lesson", s.incident.lesson]])}`
-      : v === "release" ? steps("pair", [["What changed", s.release.changed], ["Engineering consequence", s.release.consequence]])
-      : `<p class="story-sum">${esc(s.summary)}</p>`;
-    return `<article class="story v-${v}" id="s-${esc(s.id)}" data-id="${esc(s.id)}" tabindex="-1">
-      <div class="kicker">${label ? `<span class="vlabel">${label[0]}${label[1]}</span>` : ""}${s.topic && !(label && label[1].toLowerCase().startsWith(s.topic.toLowerCase().slice(0, 6))) ? `<span class="chip">${esc(s.topic)}</span>` : ""}${s.unconfirmed ? `<span class="chip flag" title="Single-source or unconfirmed report">Unconfirmed</span>` : ""}</div>
+    return `<article class="story${section === "markets" ? " v-market" : ""}" id="s-${esc(s.id)}" data-id="${esc(s.id)}" tabindex="-1">
+      ${kickerHTML(s)}
       <h3 class="story-title"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></h3>
-      <p class="story-meta">${fav(s.url)}<span class="src">${esc(s.source || "Unknown source")}</span> · ${pub(s.published)}${s.also?.length ? ` <span class="muted">· also covered by ${esc(s.also.join(", "))}</span>` : ""}</p>
-      ${body}
+      <p class="story-sum">${esc(s.summary || s.paper?.idea || "")}</p>
       ${whyHTML(s.why)}
+      ${notesHTML(s)}
+      ${metaHTML(s)}
       ${actionsHTML(s)}
     </article>`;
   }
@@ -240,12 +235,12 @@
     const flag = (s) => (s.unconfirmed ? `<span class="chip flag">Unconfirmed</span>` : "");
     return `<section class="sec sec-top" id="sec-top" aria-labelledby="h-top">${secHead("top", `Top ${top.length} today`, "Ranked for you")}
       <article class="lead">
-        <p class="lead-eyebrow"><span class="caps">Lead story</span><span>${esc(lead.section)}</span>${flag(L)}</p>
+        ${kickerHTML(L, `<span class="caps">Lead · ${esc(lead.section)}</span>`)}
         <h3 class="lead-title"><a href="${esc(L.url)}" target="_blank" rel="noopener">${esc(L.title)}</a></h3>
         <p class="lead-sum">${esc(L.summary || L.paper?.idea || "")}</p>
         ${whyHTML(L.why)}
         <p class="lead-meta">${fav(L.url)}<span class="src">${esc(L.source)}</span> · ${pub(L.published)}
-          <span class="lead-links"><button class="jump" data-jump="${esc(L.id)}">Full story in this issue</button><a href="${esc(L.url)}" target="_blank" rel="noopener">Original source${ic("ext")}</a></span></p>
+          <span class="lead-links"><button class="jump" data-jump="${esc(L.id)}">Full story in this issue</button></span></p>
       </article>
       ${rest.length ? `<ol class="top" start="2">${rest.map((t, i) => `<li>
         <span class="rank num" aria-hidden="true">${i + 2}</span>
@@ -301,7 +296,7 @@
     </section>`;
   }
   function deepHTML(d) {
-    if (d === undefined || d === null) return `<section class="sec sec-deep" id="sec-deep" aria-labelledby="h-deep">${secHead("deep", SEC.deep.title)}${notConnected("The deep read")}</section>`;
+    if (d == null) return ""; // not produced by the pipeline yet: say nothing rather than show an empty section
     const st = S.items[d.id] || {};
     return `<section class="sec sec-deep" id="sec-deep" aria-labelledby="h-deep">${secHead("deep", SEC.deep.title, "For this week")}
       <article class="deep" id="s-${esc(d.id)}" data-id="${esc(d.id)}" tabindex="-1">
@@ -351,19 +346,15 @@
     const dateline = [
       `<b>${esc(longDate(b.date))}</b>`,
       broken ? `Run started ${esc(tTime(b.generatedAt))} PT` : `Generated ${esc(tTime(b.generatedAt))} PT`,
-      broken ? "" : `<span><span class="num">${readMinutes(b)}</span> min read</span>`,
+      broken ? "" : `<span><b class="num">${count(allStories(b).length, "story", "stories")}</b> · <span class="num">${readMinutes(b)}</span> min read</span>`,
       S.mode === "demo" ? `<span class="chip sample">Sample issue</span>` : "",
     ].filter(Boolean).join(`<span class="sep" aria-hidden="true"></span>`);
-    const miss = b.missing || [];
-    // A few missing sources stay one quiet line; a large gap gets a full warning because it changes what you're reading.
-    const material = miss.length >= 3 || (b.sourcesChecked && miss.length / b.sourcesChecked >= 0.25);
     const status = b.status === "running" ? notice("", "info", "<b>Today's brief is being built.</b> Reload in a few minutes.")
-      : b.status === "failed" ? notice("bad", "alert", `<b>This brief failed to generate.</b> ${esc(b.error || "")} Check the failure alert email, then retry with the /run endpoint.`)
-      : !miss.length ? ""
-      : material ? notice("warn", "alert", `<b>${count(miss.length, "source was", "sources were")} unavailable, so coverage is thinner than usual.</b> ${esc(miss.join("; "))}.`)
-      : `<details class="warnline"><summary>${ic("alert")}${count(miss.length, "source", "sources")} unavailable: ${esc(miss.map((x) => x.split(" (")[0]).join(", "))}</summary><p>${esc(miss.join("; "))}. The brief shipped without ${miss.length === 1 ? "it" : "them"}.</p></details>`;
+      : b.status === "failed" ? notice("bad", "alert", `<b>This brief failed to generate.</b> ${esc(b.error || "")} Retry from GitHub Actions → Morning Brief → Run workflow.`)
+      : "";
     return masthead(dateline, `${archived ? notice("", "archive", `<b>Archived issue.</b> Shown exactly as it was published on ${esc(shortDate(b.date))}; it is not updated with newer information. <a href="#today">Go to today's brief</a>`) : ""}${status}`)
-      + (broken ? "" : `${topHTML(b)}${storySection("core", b.sections.core)}${storySection("ai", b.sections.ai)}${storySection("industry", b.sections.industry)}${marketsHTML(b)}${deepHTML(b.deepRead)}`);
+      + (broken ? "" : `${topHTML(b)}${storySection("core", b.sections.core)}${storySection("ai", b.sections.ai)}${storySection("industry", b.sections.industry)}${marketsHTML(b)}${deepHTML(b.deepRead)}${archived ? "" : `<section class="done" id="done">
+        <span class="done-check" aria-hidden="true">${ic("check")}</span><h2>You're caught up.</h2><p>The next brief arrives on the next weekday at 5 AM.</p></section>`}`);
   }
   const AUTH_ERR = { expired: "That sign-in took too long. Try again.", failed: "GitHub didn't complete the sign-in. Try again.", denied: "That GitHub account doesn't have access to this brief." };
   const signIn = () => {
@@ -671,7 +662,7 @@
 
   function onScroll() {
     const bar = $("#progress"); if (!bar) return;
-    const max = document.documentElement.scrollHeight - innerHeight;
+    const done = $("#done"), max = done ? done.offsetTop - innerHeight + 160 : document.documentElement.scrollHeight - innerHeight;
     const pct = max > 0 ? Math.min(100, Math.round((scrollY / max) * 100)) : 100;
     bar.style.width = `${pct}%`; bar.parentElement.setAttribute("aria-valuenow", String(pct));
     let on = null;
