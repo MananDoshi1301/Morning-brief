@@ -39,6 +39,7 @@ export const config = {
   ],
   muted: ["crypto airdrop", "sponsored", "scheduled maintenance", "maintenance window"],
 
+  // sources, topics and muted are defaults only: once edited on the app's Sources page they live in D1 (settings table).
   sources: [
     { id: "Hacker News", kind: "hn", tier: 3, minPoints: 150, filter: true },
     { id: "Lobsters", kind: "feed", url: "https://lobste.rs/t/databases,distributed,linux,compilers,performance.rss", tier: 3 },

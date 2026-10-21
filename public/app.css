@@ -241,6 +241,20 @@ select, input[type="search"], input[type="text"] { font: inherit; font-size: 14p
 .srow .h { color: var(--text-3); font-size: 13px; overflow-wrap: anywhere; }
 .srow .st { font-size: 13px; color: var(--text-2); text-align: right; }
 .st.ok { color: var(--pos); } .st.bad { color: var(--neg); } .st.warn { color: var(--warn); }
+.src-add { margin-top: var(--s6); padding: var(--s5); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); display: grid; gap: var(--s3); justify-items: start; }
+.src-add h2 { font: 600 16px/1.4 var(--sans); }
+.src-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); width: 100%; }
+.src-grid label { display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
+.src-grid .wide, .src-grid .check { grid-column: 1 / -1; }
+.src-grid .check { display: flex; align-items: center; gap: var(--s2); font-size: 14px; }
+.src-grid input[type="url"], .src-grid select { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 6px 10px; min-height: 36px; }
+.add-btn { border: 1px solid var(--line-strong); color: var(--text); }
+.form-msg { font-size: 13px; color: var(--text-2); }
+.srow .bad { color: var(--neg); }
+.chip-x { border: 0; background: none; color: var(--text-3); cursor: pointer; padding: 0 0 0 4px; font-size: 14px; line-height: 1; }
+.chip-x:hover { color: var(--neg); }
+.inline-add { display: flex; gap: var(--s2); margin-top: var(--s3); }
+@media (max-width: 600px) { .src-grid { grid-template-columns: minmax(0, 1fr); } }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; padding-top: var(--s3); }
 .setting { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--s4); padding: var(--s4) 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .setting .k { font-weight: 500; }

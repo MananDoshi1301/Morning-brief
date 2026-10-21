@@ -36,3 +36,9 @@ CREATE TABLE IF NOT EXISTS feedback (
   reason TEXT,                    -- optional "why" after a thumbs down
   created INTEGER NOT NULL
 );
+
+-- Lists edited in the app (sources, topics, muted). A missing key means "use src/config.ts".
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL           -- JSON
+);

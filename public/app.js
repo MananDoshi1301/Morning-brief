@@ -342,24 +342,32 @@
           <p class="applies">Stories match on the names listed next to each ticker.</p></div>`}`;
   }
   function sourcesPage() {
-    const c = S.cfg;
+    const c = S.cfg, live = S.mode === "live";
     const missing = (S.brief?.missing || []).map((m) => m.split(" (")[0]);
-    const groups = [
-      ["Official announcements & releases", (s) => s.tier === 1 && s.kind !== "arxiv" && s.section !== "markets"],
-      ["Markets: regulators & company newsrooms", (s) => s.section === "markets"],
-      ["Research", (s) => s.kind === "arxiv"],
-      ["Engineering blogs & established outlets", (s) => s.tier === 2 && s.section !== "markets"],
-      ["Technical communities", (s) => s.tier === 3],
-    ];
-    const prio = { 1: "Highest priority (primary)", 2: "Standard priority", 3: "Lower priority (community)" };
-    return `<header class="page-head"><h1>Sources &amp; topics</h1><p>Where stories come from and what the brief looks for. Primary sources outrank outlets, which outrank forums.</p></header>
-      <div style="margin-top:var(--s4)">${readOnlyNote()}</div>
-      ${groups.map(([name, fn]) => { const list = (c?.sources || []).filter(fn); return list.length ? `<div class="group"><h2>${esc(name)} <span class="meta">${list.length}</span></h2>
-        ${list.map((s) => { const down = missing.includes(s.id); return `<div class="srow"><div>${esc(s.id)}<br><span class="h">${esc(s.url ? host(s.url) : s.kind === "hn" ? `news.ycombinator.com, ${s.minPoints}+ points` : (s.categories || []).join(", "))}${s.filter ? " · topic-filtered" : ""}</span></div>
-          <div class="st ${down ? "bad" : ""}">${down ? "Unavailable in latest brief" : esc(prio[s.tier])}</div></div>`; }).join("")}</div>` : ""; }).join("")}
-      <div class="group"><h2>Interest topics <span class="meta">${(c?.topics || []).length}</span></h2><div class="chips">${(c?.topics || []).map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</div>
-        <p class="applies">Community and broad sources only keep items that mention one of these.</p></div>
-      <div class="group"><h2>Muted <span class="meta">${(c?.muted || []).length}</span></h2>${(c?.muted || []).length ? `<div class="chips">${c.muted.map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</div>` : `<p class="applies">Nothing muted.</p>`}</div>`;
+    const prio = { 1: "Primary", 2: "Standard", 3: "Community" };
+    const where = (s) => s.url ? host(s.url) : s.kind === "hn" ? `news.ycombinator.com, ${s.minPoints}+ points` : (s.categories || []).join(", ");
+    const sections = [["core", "Core tech"], ["ai", "AI"], ["industry", "Industry & startups"]];
+    const chipList = (list, key) => `<div class="chips">${(c?.[key] || []).map((t) => `<span class="chip">${esc(t)}${live ? `<button class="chip-x" data-act="word-remove" data-list="${key}" data-word="${esc(t)}" aria-label="Remove ${esc(t)}">×</button>` : ""}</span>`).join("")}</div>
+      ${live ? `<form class="inline-add" data-form="word" data-list="${key}"><input type="text" name="word" placeholder="Add a word" aria-label="Add to ${list}" required minlength="2" maxlength="40"><button class="act">Add</button></form>` : ""}`;
+    return `<header class="page-head"><h1>Sources &amp; topics</h1><p>Where stories come from and what the brief looks for. Changes apply from the next build.</p></header>
+      ${live ? `<form class="src-add" data-form="source">
+        <h2>Add a source</h2>
+        <div class="src-grid">
+          <label>Name<input type="text" name="id" required maxlength="60" placeholder="Uber Engineering"></label>
+          <label class="wide">Feed URL (RSS or Atom)<input type="url" name="url" required placeholder="https://example.com/feed.xml"></label>
+          <label>Section<select name="section">${sections.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
+          <label>Priority<select name="tier"><option value="1">Primary</option><option value="2" selected>Standard</option><option value="3">Community</option></select></label>
+          <label class="check"><input type="checkbox" name="filter"> Only keep posts matching interest topics</label>
+        </div>
+        <button class="act add-btn">Check feed and add</button><span class="form-msg" role="status"></span>
+      </form>` : ""}
+      ${sections.map(([sec, name]) => { const list = (c?.sources || []).filter((s) => (s.section || "core") === sec); return list.length ? `<div class="group"><h2>${esc(name)} <span class="meta">${list.length}</span></h2>
+        ${list.map((s) => { const down = missing.includes(s.id); return `<div class="srow"><div>${esc(s.id)}<br><span class="h">${esc(where(s))} · ${prio[s.tier]}${s.filter ? " · topic-filtered" : ""}${down ? ` · <span class="bad">unavailable in latest brief</span>` : ""}</span></div>
+          ${live ? `<button class="jump" data-act="src-remove" data-src="${esc(s.id)}">Remove</button>` : ""}</div>`; }).join("")}</div>` : ""; }).join("")}
+      <div class="group"><h2>Interest topics <span class="meta">${(c?.topics || []).length}</span></h2>${chipList("interest topics", "topics")}
+        <p class="applies">Topic-filtered sources only keep posts that mention one of these.</p></div>
+      <div class="group"><h2>Muted <span class="meta">${(c?.muted || []).length}</span></h2>${chipList("muted words", "muted")}
+        <p class="applies">Headlines containing these are dropped.</p></div>`;
   }
 
   function settingsPage() {
@@ -489,6 +497,13 @@
     el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
     el.focus({ preventScroll: true });
   }
+  // Destructive buttons ask once more in place: first click relabels, second click (within 4 s) acts.
+  function confirmTwice(btn, label) {
+    if (btn.dataset.armed) return true;
+    const was = btn.textContent; btn.dataset.armed = "1"; btn.textContent = label;
+    setTimeout(() => { delete btn.dataset.armed; btn.textContent = was; }, 4000);
+    return false;
+  }
   function storyOf(el) { return el.closest("[data-id]")?.dataset.id || el.closest("[data-for]")?.dataset.for; }
 
   document.addEventListener("click", async (e) => {
@@ -498,6 +513,16 @@
     if (t.dataset.sec) { e.preventDefault(); jumpTo(t.dataset.sec); return; }
     const a = t.dataset.act, id = t.dataset.id || storyOf(t);
     if (a === "theme") return setTheme();
+    if (a === "src-remove") {
+      if (!confirmTwice(t, "Confirm remove")) return;
+      S.cfg.sources = (await getJSON("/api/sources", { method: "POST", body: JSON.stringify({ remove: t.dataset.src }) })).sources;
+      say(`Removed ${t.dataset.src}`); return render();
+    }
+    if (a === "word-remove") {
+      const k = t.dataset.list;
+      S.cfg[k] = (await getJSON("/api/topics", { method: "POST", body: JSON.stringify({ list: k, remove: t.dataset.word }) }))[k];
+      return render();
+    }
     if (a === "help") return showHelp();
     if (a === "menu") {
       const nav = $("#nav"), open = !nav.classList.contains("open");
@@ -528,8 +553,24 @@
       render();
     }
   });
-  document.addEventListener("submit", (e) => {
-    if (e.target.id !== "archive-form") return;
+  document.addEventListener("submit", async (e) => {
+    const f = e.target, kind = f.dataset.form;
+    if (kind === "source" || kind === "word") {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(f)), btn = $("button", f), msg = $(".form-msg", f);
+      btn.disabled = true; if (msg) msg.textContent = "Checking the feed…";
+      try {
+        if (kind === "source") {
+          S.cfg.sources = (await getJSON("/api/sources", { method: "POST", body: JSON.stringify({ add: { ...d, filter: !!d.filter } }) })).sources;
+          say(`Added ${d.id}`);
+        } else {
+          S.cfg[f.dataset.list] = (await getJSON("/api/topics", { method: "POST", body: JSON.stringify({ list: f.dataset.list, add: d.word }) }))[f.dataset.list];
+        }
+        await render();
+      } catch (err) { btn.disabled = false; if (msg) msg.textContent = err.message; else say(err.message); }
+      return;
+    }
+    if (f.id !== "archive-form") return;
     e.preventDefault(); S.archiveQ = $("#archive-q").value.trim(); render().then(() => $("#archive-q")?.focus());
   });
 

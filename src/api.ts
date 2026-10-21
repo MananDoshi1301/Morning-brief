@@ -2,6 +2,7 @@
 import { config } from "./config.ts";
 import type { Env } from "./index.ts";
 import { esc } from "./util.ts";
+import { lists, saveList } from "./settings.ts";
 
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "cache-control": "no-store" } });
 
@@ -91,10 +92,46 @@ export async function api(req: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
 
+  // Add or remove a source: {add: {id, url, section, tier, filter}} or {remove: id}.
+  if (url.pathname === "/api/sources" && req.method === "POST") {
+    const body = await req.json().catch(() => ({})) as any, L = await lists(db);
+    if (typeof body.remove === "string") {
+      const sources = L.sources.filter((s) => s.id !== body.remove);
+      if (sources.length === L.sources.length) return json({ error: "No such source" }, 404);
+      await saveList(db, "sources", sources);
+      return json({ sources });
+    }
+    const a = body.add ?? {}, id = String(a.id ?? "").trim().slice(0, 60);
+    if (!id || L.sources.some((s) => s.id.toLowerCase() === id.toLowerCase())) return json({ error: id ? "A source with that name exists" : "Give the source a name" }, 400);
+    let feed: URL;
+    try { feed = new URL(String(a.url)); if (!/^https?:$/.test(feed.protocol)) throw 0; } catch { return json({ error: "The URL must start with http:// or https://" }, 400); }
+    if (!["core", "ai", "industry"].includes(a.section)) return json({ error: "Pick a section" }, 400);
+    const tier = [1, 2, 3].includes(Number(a.tier)) ? Number(a.tier) as 1 | 2 | 3 : 2;
+    // Check it's a feed before it can break a morning's build.
+    const r = await fetch(feed, { headers: { "user-agent": "Mozilla/5.0 morning-brief" }, signal: AbortSignal.timeout(8000) }).catch(() => null);
+    const head = r?.ok ? (await r.text()).slice(0, 4000) : "";
+    if (!/<(rss|feed|rdf:RDF)[\s>]/i.test(head)) return json({ error: r?.ok ? "That URL isn't an RSS or Atom feed" : `Couldn't fetch it (${r?.status ?? "no response"})` }, 400);
+    const sources = [...L.sources, { id, kind: "feed" as const, url: feed.href, tier, section: a.section, ...(a.filter ? { filter: true } : {}) }];
+    await saveList(db, "sources", sources);
+    return json({ sources });
+  }
+
+  // Add or remove an interest keyword or muted word: {list: "topics" | "muted", add | remove: word}.
+  if (url.pathname === "/api/topics" && req.method === "POST") {
+    const body = await req.json().catch(() => ({})) as any, L = await lists(db);
+    const key = body.list === "muted" ? "muted" : "topics";
+    const word = String(body.add ?? body.remove ?? "").trim().toLowerCase().slice(0, 40);
+    if (word.length < 2) return json({ error: "Too short" }, 400);
+    const next = body.add ? [...new Set([...L[key], word])] : L[key].filter((w) => w !== word);
+    await saveList(db, key, next);
+    return json({ [key]: next });
+  }
+
   if (url.pathname === "/api/config") {
+    const L = await lists(db);
     return json({
       watchlist: config.watchlist.map((w) => ({ ticker: w.ticker, names: w.names })),
-      sources: config.sources, topics: config.topics, muted: config.muted,
+      sources: L.sources, topics: L.topics, muted: L.muted,
       delivery: { time: config.deliveryLabel, email: env.EMAIL_TO },
     });
   }

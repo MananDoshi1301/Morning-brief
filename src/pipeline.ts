@@ -6,6 +6,7 @@ import { toUi } from "./ui.ts";
 import { fetchSource } from "./sources.ts";
 import { dedupe, local, matchesAny, windowMs, type Item } from "./util.ts";
 import type { Judged } from "./llm.ts";
+import { lists } from "./settings.ts";
 
 // No Worker-only imports here: scripts/run-brief.ts runs this in Node with REST-backed DB/AI.
 export interface PipelineEnv extends MarketEnv {
@@ -28,7 +29,6 @@ async function seenIds(db: D1Database, ids: string[], today: string) {
   return seen;
 }
 
-const sectionOf = new Map(config.sources.map((s) => [s.id, "section" in s && s.section ? s.section : "core"]));
 
 export async function buildBrief(env: PipelineEnv, now = Date.now(), force = false, send?: Send) {
   const date = local(now).date;
@@ -44,16 +44,18 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     const missing: string[] = [];
 
     // fetch → normalize
-    const fetched = await Promise.all(config.sources.map(async (s) => {
+    const L = await lists(env.DB);
+    const sectionOf = new Map(L.sources.map((s) => [s.id, "section" in s && s.section ? s.section : "core"]));
+    const fetched = await Promise.all(L.sources.map(async (s) => {
       try {
         const items = await fetchSource(s, since);
-        return "filter" in s && s.filter ? items.filter((i) => matchesAny(`${i.title} ${i.text}`, config.topics)) : items;
+        return "filter" in s && s.filter ? items.filter((i) => matchesAny(`${i.title} ${i.text}`, L.topics)) : items;
       } catch (e) {
         missing.push(`${s.id} (${(e as Error).message})`);
         return [] as Item[];
       }
     }));
-    const all = fetched.flat().filter((i) => !matchesAny(i.title, config.muted) && !config.releaseNoise.test(i.title));
+    const all = fetched.flat().filter((i) => !matchesAny(i.title, L.muted) && !config.releaseNoise.test(i.title));
 
     // dedupe (within today, then against past briefs)
     const unique = dedupe(all);
@@ -92,7 +94,7 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     // render + store (the app reads `data`; the email is `html`)
     const brief = { date, top, core, ai, industry, marketNews, markets, missing };
     const html = render(brief, env.BASE_URL, env.ACCESS_KEY);
-    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: config.sources.length, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
+    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: L.sources.length, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
     const shown = new Set([...core, ...ai, ...industry, ...marketNews].map((c) => c.id));
     await env.DB.batch([
       ...judged.map((j) => env.DB.prepare(
