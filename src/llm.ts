@@ -72,47 +72,25 @@ export async function judge(run: Run, items: Item[], votes: Record<string, numbe
   return out;
 }
 
-const EVENTS = `You find news stories that report the same event. List A holds stories already shown in recent issues. List B holds today's stories, numbered.
-Two stories are the same event when they cover the same incident, outage, release, paper, announcement or company action, even if worded differently.
-Return ONLY JSON: {"same": [[B numbers that are one event], ...], "old": [B numbers that repeat an event from list A]}. Leave out stories with no match. When unsure, they are different.`;
-
-/** Validated groups of 1-based B numbers; anything malformed means "no duplicates". */
-export function parseEvents(reply: unknown, n: number): { same: number[][]; old: number[] } {
-  const s = typeof reply === "string" ? reply : JSON.stringify(reply ?? "");
-  const a = s.indexOf("{"), b = s.lastIndexOf("}");
-  const ok = (x: unknown) => Number.isInteger(x) && (x as number) >= 1 && (x as number) <= n;
-  try {
-    const j = JSON.parse(s.slice(a, b + 1));
-    const same = (Array.isArray(j.same) ? j.same : []).map((g: unknown) => Array.isArray(g) ? [...new Set(g.map(Number).filter(ok))] : []).filter((g: number[]) => g.length > 1);
-    const old = (Array.isArray(j.old) ? j.old : []).map(Number).filter(ok);
-    return { same, old };
-  } catch { return { same: [], old: [] }; }
+const STOP = new Set("with from that this your into after about over what when says their have more than today year just will been were they them only also here there which while where using used".split(" "));
+const words = (t: string) => new Set(t.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !STOP.has(w)));
+/** Same event = the headlines share two or more significant words ("google", "cloud", "outage"). */
+export function sameEvent(a: string, b: string) {
+  const A = words(a); let n = 0;
+  for (const w of words(b)) if (A.has(w) && ++n >= 2) return true;
+  return false;
 }
 
-/** One card per event: the best-scored story keeps the slot, the rest become "also covered" links; repeats of earlier issues go. */
-export async function mergeEvents(run: Run, judged: Judged[], earlier: string[], notes: string[]) {
-  const head = judged.slice(0, 40); // already sorted best-first; the tail can't reach the brief anyway
-  if (head.length < 2) return judged;
-  let ev: { same: number[][]; old: number[] };
-  try {
-    const res: any = await run(config.llmModel, {
-      messages: [{ role: "system", content: EVENTS }, { role: "user", content:
-        `List A:\n${earlier.map((t) => `- ${t}`).join("\n") || "(none)"}\n\nList B:\n${head.map((t, i) => `${i + 1}. ${t.title}`).join("\n")}` }],
-      max_tokens: 300, temperature: 0,
-    });
-    ev = parseEvents(res?.response, head.length);
-  } catch (e) { notes.push(`event grouping skipped (${(e as Error).message})`); return judged; }
-  const drop = new Set(ev.old.map((i) => i - 1));
-  for (const g of ev.same) {
-    const [keep, ...rest] = g.map((i) => i - 1).filter((i) => !drop.has(i)).sort((x, y) => x - y);
-    if (keep === undefined) continue;
-    for (const r of rest) {
-      const o = head.at(r)!;
-      (head.at(keep)!.related ??= []).push({ title: o.title, url: o.url, source: o.source });
-      drop.add(r);
-    }
+/** One card per event: the best-scored story keeps the slot, the rest become "also covered" links; repeats of recent issues go. */
+export function mergeEvents(judged: Judged[], earlier: string[]) {
+  const out: Judged[] = [];
+  for (const j of judged) { // best-first, so the first of an event is the one kept
+    if (earlier.some((t) => sameEvent(t, j.title))) continue;
+    const keep = out.find((o) => sameEvent(o.title, j.title));
+    if (keep) (keep.related ??= []).push({ title: j.title, url: j.url, source: j.source });
+    else out.push(j);
   }
-  return judged.filter((_, i) => !drop.has(i));
+  return out;
 }
 
 const INSIGHT = `Below are today's top stories for a database and distributed-systems engineer. If two or more are genuinely connected (same system, same company, or one plainly affects the other), write ONE or TWO plain sentences stating that connection using only facts given. Otherwise there is no insight.

@@ -68,11 +68,11 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
       .results.map((r) => [r.source, r.v]));
     const run = (m: string, i: unknown) => env.AI.run(m as any, i as any);
     const earlier = (await env.DB.prepare(
-      `SELECT title FROM items WHERE shown = 1 AND brief_date < ? ORDER BY brief_date DESC, score DESC LIMIT 40`,
+      `SELECT title FROM items WHERE shown = 1 AND brief_date < ? ORDER BY brief_date DESC LIMIT 60`, // ~the last 3 issues
     ).bind(date).all<{ title: string }>()).results.map((r) => r.title);
-    const judged = await mergeEvents(run, (await judge(run, candidates, votes, missing))
+    const judged = mergeEvents((await judge(run, candidates, votes, missing))
       .filter((j) => j.score >= config.minScore)
-      .sort((a, b) => b.score - a.score), earlier, missing);
+      .sort((a, b) => b.score - a.score), earlier);
     const of = (sec: string) => {
       const n: Record<string, number> = {};
       return judged.filter((j) => sectionOf.get(j.source) === sec && (n[j.source] = (n[j.source] ?? 0) + 1) <= (isPaper(j) ? config.papersMax : config.perSource));
