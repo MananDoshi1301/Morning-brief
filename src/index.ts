@@ -79,16 +79,17 @@ async function githubAuth(url: URL, req: Request, env: Env): Promise<Response> {
   if (url.pathname !== "/auth/callback") return new Response("Not found", { status: 404 });
   const state = /(?:^|;\s*)mbs=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1];
   const code = url.searchParams.get("code");
-  if (!code || !state || url.searchParams.get("state") !== state) return new Response("Sign-in expired, try again", { status: 400 });
+  const back = (why: string) => new Response(null, { status: 302, headers: { location: `${url.origin}/?auth=${why}` } });
+  if (!code || !state || url.searchParams.get("state") !== state) return back("expired");
   const tok: any = await (await fetch("https://github.com/login/oauth/access_token", {
     method: "POST", headers: { accept: "application/json", "content-type": "application/json" },
     body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: redirect }),
   })).json();
-  if (!tok.access_token) return new Response("GitHub sign-in failed", { status: 502 });
+  if (!tok.access_token) return back("failed");
   const user: any = await (await fetch("https://api.github.com/user", {
     headers: { authorization: `Bearer ${tok.access_token}`, "user-agent": "morning-brief" },
   })).json();
-  if (String(user.login ?? "").toLowerCase() !== env.GITHUB_USER.toLowerCase()) return new Response("This GitHub account isn't allowed", { status: 403 });
+  if (String(user.login ?? "").toLowerCase() !== env.GITHUB_USER.toLowerCase()) return back("denied");
   const h = new Headers({ location: `${url.origin}/#today` });
   h.append("set-cookie", sessionCookie(env));
   h.append("set-cookie", "mbs=; Path=/auth; Max-Age=0");
