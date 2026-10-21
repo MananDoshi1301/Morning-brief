@@ -19,7 +19,7 @@ export const config = {
   papersMax: 2, // arXiv papers per issue, shown last in Core tech
   // Bare version announcements ("OpenBSD 8.0 released"): dropped before the model sees them.
   releaseNoise: /\b\d+(\.\d+)+\b.*\b(released|is out|now available)\b|^(release|version) v?\d/i,
-  caps: { top: 5, core: 14, ai: 4, industry: 5, markets: 0 },
+  caps: { top: 5, core: 12, ai: 6, industry: 6, markets: 0 },
 
   // Interest keywords. Sources with `filter: true` only keep items matching one.
   topics: [
@@ -33,8 +33,9 @@ export const config = {
     "scale", "scaling", "latency", "throughput", "shard", "partition", "cache", "caching", "kafka", "queue",
     "stream", "index", "reliability", "availability", "durability", "migration", "infrastructure", "architecture",
     "performance", "observability", "storage", "data platform", "data center", "distributed", "load balanc",
-    // status pages: keep incidents, skip notices
-    "degraded", "disruption", "elevated error", "unavailable", "increased error", "root cause", "resolved",
+    // AI and the companies building it
+    "openai", "anthropic", "claude", "chatgpt", "gemini", "llama", "mistral", "deepmind", "llm", "language model",
+    "agent", "startup", "nvidia", "microsoft", "google", "amazon", "apple",
   ],
   muted: ["crypto airdrop", "sponsored", "scheduled maintenance", "maintenance window"],
 
@@ -67,15 +68,6 @@ export const config = {
     { id: "TigerBeetle", kind: "feed", url: "https://tigerbeetle.com/blog/atom.xml", tier: 1 },
     { id: "InfoQ Architecture", kind: "feed", url: "https://www.infoq.com/feed/?topic=architecture-design", tier: 2, filter: true },
 
-    // What happened: official incident reports and postmortems from the big providers
-    { id: "Google Cloud status", kind: "feed", url: "https://status.cloud.google.com/en/feed.atom", tier: 1 },
-    { id: "AWS Health", kind: "feed", url: "https://status.aws.amazon.com/rss/all.rss", tier: 1, filter: true },
-    { id: "GitHub status", kind: "feed", url: "https://www.githubstatus.com/history.rss", tier: 1, filter: true },
-    { id: "GitHub availability reports", kind: "feed", url: "https://github.blog/tag/github-availability-report/feed/", tier: 1 },
-    { id: "Cloudflare postmortems", kind: "feed", url: "https://blog.cloudflare.com/tag/post-mortem/rss/", tier: 1 },
-    { id: "Cloudflare outage reports", kind: "feed", url: "https://blog.cloudflare.com/tag/outage/rss/", tier: 1 },
-    { id: "Slack status", kind: "feed", url: "https://slack-status.com/feed/rss", tier: 1, filter: true },
-
     // People who write deeply about databases and distributed systems
     { id: "All Things Distributed", kind: "feed", url: "https://www.allthingsdistributed.com/atom.xml", tier: 2 },
     { id: "Marc Brooker", kind: "feed", url: "https://brooker.co.za/blog/rss.xml", tier: 2 },
@@ -90,12 +82,25 @@ export const config = {
     { id: "Dan Luu", kind: "feed", url: "https://danluu.com/atom.xml", tier: 2 },
     { id: "Brendan Gregg", kind: "feed", url: "https://www.brendangregg.com/blog/rss.xml", tier: 2 },
 
-    // AI & infrastructure
+    // AI: labs, models and the people tracking them
+    { id: "OpenAI news", kind: "feed", url: "https://openai.com/news/rss.xml", tier: 1, section: "ai" },
+    { id: "Google AI blog", kind: "feed", url: "https://blog.google/technology/ai/rss/", tier: 1, section: "ai" },
     { id: "Hugging Face blog", kind: "feed", url: "https://huggingface.co/blog/feed.xml", tier: 2, section: "ai", filter: true },
+    { id: "Simon Willison", kind: "feed", url: "https://simonwillison.net/atom/everything/", tier: 2, section: "ai" },
+    { id: "Latent Space", kind: "feed", url: "https://www.latent.space/feed", tier: 2, section: "ai" },
+    { id: "Interconnects", kind: "feed", url: "https://www.interconnects.ai/feed", tier: 2, section: "ai" },
+    { id: "Import AI", kind: "feed", url: "https://importai.substack.com/feed", tier: 2, section: "ai" },
+    { id: "TechCrunch AI", kind: "feed", url: "https://techcrunch.com/category/artificial-intelligence/feed/", tier: 2, section: "ai" },
+    { id: "The Verge AI", kind: "feed", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", tier: 2, section: "ai" },
+    { id: "MIT Technology Review AI", kind: "feed", url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", tier: 2, section: "ai" },
 
-    // Industry & culture
+    // Industry & startups: what the giants and new companies are doing
+    { id: "Techmeme", kind: "feed", url: "https://www.techmeme.com/feed.xml", tier: 2, section: "industry" },
+    { id: "TechCrunch Startups", kind: "feed", url: "https://techcrunch.com/category/startups/feed/", tier: 2, section: "industry" },
+    { id: "The Information", kind: "feed", url: "https://www.theinformation.com/feed", tier: 2, section: "industry" },
+    { id: "Stratechery", kind: "feed", url: "https://stratechery.com/feed/", tier: 2, section: "industry" },
+    { id: "Platformer", kind: "feed", url: "https://www.platformer.news/rss/", tier: 2, section: "industry" },
     { id: "Pragmatic Engineer", kind: "feed", url: "https://newsletter.pragmaticengineer.com/feed", tier: 2, section: "industry" },
-    { id: "Charity Majors", kind: "feed", url: "https://charity.wtf/feed/", tier: 2, section: "industry" },
     { id: "Ars Technica", kind: "feed", url: "https://feeds.arstechnica.com/arstechnica/technology-lab", tier: 2, section: "industry" },
     { id: "The Register", kind: "feed", url: "https://www.theregister.com/headlines.atom", tier: 2, section: "industry", filter: true },
   ] as Source[],

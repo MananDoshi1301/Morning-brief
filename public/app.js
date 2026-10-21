@@ -178,7 +178,7 @@
   const SEC = {
     core: { n: "01", title: "Core tech &amp; engineering" },
     ai: { n: "02", title: "AI &amp; infrastructure" },
-    industry: { n: "03", title: "Industry &amp; culture" },
+    industry: { n: "03", title: "Industry &amp; startups" },
     markets: { n: "04", title: "Markets &amp; investing" },
     deep: { n: "05", title: "One deep read" },
   };
