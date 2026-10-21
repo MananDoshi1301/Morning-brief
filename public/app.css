@@ -323,6 +323,8 @@ select, input[type="search"], input[type="text"] { font: inherit; font-size: 14p
 .signin-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .signin-err { margin: 0; padding: var(--s2) var(--s3); border-radius: var(--r-sm); border: 1px solid var(--neg); color: var(--neg); font-size: 14px; }
 .signin-alt { margin: 0; padding-top: var(--s4); border-top: 1px solid var(--line); color: var(--text-3); font-size: 14px; width: 100%; }
+.shell.locked { grid-template-columns: minmax(0, 1fr); max-width: 720px; }
+.shell.locked :is(.nav, .rail, [data-act="menu"], [href="#archive"], [data-act="help"]) { display: none; }
 @media (max-width: 600px) { .signin { padding: var(--s8) 0; } .signin h1 { font-size: 28px; } }
 .group { margin-top: var(--s8); }
 .group h2 { font: 600 16px/1.4 var(--sans); padding-bottom: var(--s2); border-bottom: 1px solid var(--line); display: flex; gap: var(--s3); align-items: baseline; }

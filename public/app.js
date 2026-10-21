@@ -533,6 +533,7 @@
         <main class="main" id="main" tabindex="-1"></main>
         <aside class="rail" id="rail" aria-label="About this brief"></aside></div>`;
     }
+    app.firstElementChild.classList.toggle("locked", S.mode === "locked"); // signed out: nothing to navigate to
     $("#nav").innerHTML = navHTML();
     $("#theme-top").innerHTML = ic(themeIcon);
     const main = $("#main");
