@@ -13,13 +13,13 @@ export const config = {
 
   // Workers AI model. Confirm it is still listed: `npx wrangler ai models list`
   llmModel: "@cf/meta/llama-3.1-8b-instruct-fast",
-  maxLlmItems: 120, // ~15 model calls; still a small share of the free 10k neurons/day
+  maxLlmItems: 240, // ~30 model calls; still well inside the free 10k neurons/day
   minScore: 6, // 0-10; anything below is dropped even if a section ends up short
-  perSource: 3, // no one source fills a section
+  perSource: 4, // no one source fills a section
   papersMax: 2, // arXiv papers per issue, shown last in Core tech
   // Bare version announcements ("OpenBSD 8.0 released"): dropped before the model sees them.
   releaseNoise: /\b\d+(\.\d+)+\b.*\b(released|is out|now available)\b|^(release|version) v?\d/i,
-  caps: { top: 5, core: 12, ai: 6, industry: 6, markets: 0 },
+  caps: { top: 5, core: 20, ai: 12, industry: 12, markets: 0 },
 
   // Interest keywords. Sources with `filter: true` only keep items matching one.
   topics: [
