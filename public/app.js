@@ -196,129 +196,46 @@
     return `<details class="notes"><summary>${s.paper ? "Paper" : s.incident ? "Incident" : "Release"} notes</summary><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>`;
   }
   const kickerHTML = (s, pre = "") => `<div class="kicker">${pre}${s.topic ? `<span class="topic">${esc(s.topic)}</span>` : ""}${s.unconfirmed ? `<span class="chip flag" title="Single-source or unconfirmed report">Unconfirmed</span>` : ""}</div>`;
-  const metaHTML = (s) => `<p class="story-meta">${fav(s.url)}<span class="src">${esc(s.source || "Unknown source")}</span> · ${pub(s.published)}${s.also?.length ? ` <span class="muted">· also covered by ${esc(s.also.join(", "))}</span>` : ""}</p>`;
+  const metaHTML = (s) => `<p class="story-meta">${esc(s.source || "Unknown source")}${s.published ? ` · ${esc(tTime(s.published))}` : ""}${s.also?.length ? ` · also ${esc(s.also.join(", "))}` : ""}</p>`;
 
-  function storyHTML(s, section) {
-    return `<article class="story${section === "markets" ? " v-market" : ""}" id="s-${esc(s.id)}" data-id="${esc(s.id)}" tabindex="-1">
-      ${kickerHTML(s)}
+  function storyHTML(s, lead = false) {
+    return `<article class="story${lead ? " is-lead" : ""}" id="s-${esc(s.id)}" data-id="${esc(s.id)}" tabindex="-1">
+      ${kickerHTML(s, lead ? `<span class="topic">Lead ·</span>` : "")}
       <h3 class="story-title"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></h3>
       <p class="story-sum">${esc(s.summary || s.paper?.idea || "")}</p>
       ${whyHTML(s.why)}
       ${notesHTML(s)}
-      ${metaHTML(s)}
-      ${actionsHTML(s)}
+      <div class="story-foot">${metaHTML(s)}${actionsHTML(s)}</div>
     </article>`;
   }
 
-  function secHead(id, title, meta) {
-    const n = SEC[id]?.n;
-    return `<div class="sec-head">${n ? `<span class="sec-n num" aria-hidden="true">${n}</span>` : ""}<h2 id="h-${id}">${title}</h2>${meta ? `<span class="meta">${meta}</span>` : ""}</div>`;
-  }
   const notice = (kind, icon, html) => `<div class="notice ${kind}" role="${kind === "bad" ? "alert" : "note"}">${ic(icon)}<div>${html}</div></div>`;
-  const notConnected = (what) => notice("", "info", `<b>${what} isn't connected yet.</b> The pipeline doesn't produce this section, so nothing is shown rather than placeholder stories.`);
   const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-  function storySection(id, list) {
-    const title = SEC[id].title;
-    if (list == null) return `<section class="sec sec-${id}" id="sec-${id}" aria-labelledby="h-${id}">${secHead(id, title)}${notConnected(title)}</section>`;
-    return `<section class="sec sec-${id}" id="sec-${id}" aria-labelledby="h-${id}">${secHead(id, title, list.length ? count(list.length, "story", "stories") : "")}
-      ${list.length ? `<div class="stories">${list.map((s) => storyHTML(s, id)).join("")}</div>`
-        : notice("", "info", `<b>Nothing cleared the bar today.</b> No story in this section met the quality threshold, so it's empty instead of padded.`)}
-    </section>`;
-  }
-
-  function topHTML(b) {
-    const byId = Object.fromEntries(allStories(b).map((s) => [s.id, s]));
-    const top = b.top.map((t) => ({ ...t, s: byId[t.id] })).filter((t) => t.s);
-    if (!top.length) return `<section class="sec sec-top" id="sec-top" aria-labelledby="h-top">${secHead("top", "Top today")}${notice("", "info", "<b>No top stories today.</b> Nothing in this issue cleared the bar for the top list.")}</section>`;
-    const [lead, ...rest] = top, L = lead.s;
-    const flag = (s) => (s.unconfirmed ? `<span class="chip flag">Unconfirmed</span>` : "");
-    return `<section class="sec sec-top" id="sec-top" aria-labelledby="h-top">${secHead("top", `Top ${top.length} today`, "Ranked for you")}
-      <article class="lead">
-        ${kickerHTML(L, `<span class="caps">Lead · ${esc(lead.section)}</span>`)}
-        <h3 class="lead-title"><a href="${esc(L.url)}" target="_blank" rel="noopener">${esc(L.title)}</a></h3>
-        <p class="lead-sum">${esc(L.summary || L.paper?.idea || "")}</p>
-        ${whyHTML(L.why)}
-        <p class="lead-meta">${fav(L.url)}<span class="src">${esc(L.source)}</span> · ${pub(L.published)}
-          <span class="lead-links"><button class="jump" data-jump="${esc(L.id)}">Full story in this issue</button></span></p>
-      </article>
-      ${rest.length ? `<ol class="top" start="2">${rest.map((t, i) => `<li>
-        <span class="rank num" aria-hidden="true">${i + 2}</span>
-        <div><h3><a href="${esc(t.s.url)}" target="_blank" rel="noopener">${esc(t.s.title)}</a></h3>
-          <p class="line"><span class="sec-tag">${esc(t.section)}</span>${flag(t.s)}<span>${esc(t.s.source)} · ${pub(t.s.published)}</span>
-            <button class="jump" data-jump="${esc(t.s.id)}">Read in brief</button></p></div></li>`).join("")}</ol>` : ""}
-    </section>`;
+  function storySection(id, list, skip) {
+    const items = (list || []).filter((s) => s.id !== skip);
+    return items.length ? `<section class="sec" id="sec-${id}" aria-labelledby="h-${id}"><div class="ed-h"><h2 id="h-${id}">${SEC[id].title}</h2></div>${items.map((s) => storyHTML(s)).join("")}</section>` : "";
   }
 
   // Calendar order: the trading day, then anything without a published time.
   const SLOT = { "Before the open": 0, null: 1, "After the close": 2, "Time not announced": 3 };
   const slotName = (e) => e.timing || "Today"; // release calendars give a date, not a time
 
-  function marketsHTML(b) {
+  function marketsHTML(b, skip) {
     const m = b.markets;
-    if (!m) return `<section class="sec sec-markets" id="sec-markets" aria-labelledby="h-markets">${secHead("markets", SEC.markets.title)}${notConnected("Markets")}</section>`;
-    const formName = { "4": "Insider transaction (Form 4)", "8-K": "Current report (8-K)", "SC 13D": "Activist stake over 5% (13D)", "SC 13G": "Passive stake over 5% (13G)" };
-    const wl = m.watchlist || [];
-    const active = wl.filter((w) => w.filings.length || w.mentions.length);
+    if (!m) return "";
     const cal = (m.calendar || []).slice().sort((a, c) => (SLOT[a.timing] ?? 1) - (SLOT[c.timing] ?? 1));
-    const nFilings = wl.reduce((n, w) => n + w.filings.length, 0);
-    const nMacro = cal.filter((e) => e.type === "macro").length, nEarn = cal.length - nMacro;
-    // Counts from this issue's data; each links to the part of the section it summarizes.
-    const strip = [
-      ["mk-news", m.news?.length || 0, "market stories"],
-      ["mk-cal", nMacro, "economic releases today"],
-      ["mk-cal", nEarn, "earnings today"],
-      ["mk-watch", nFilings, `new filings across ${count(wl.length, "company", "companies")}`],
-    ];
-    let lastSlot;
-    return `<section class="sec sec-markets" id="sec-markets" aria-labelledby="h-markets">${secHead("markets", SEC.markets.title, "News and events, no prices")}
-      <div class="strip" role="list">${strip.map(([to, n, l]) => `<a role="listitem" href="#" data-sec="${to}" class="cell${n ? "" : " zero"}"><b class="num">${n}</b><span>${esc(l)}</span></a>`).join("")}</div>
-
-      <div id="sec-mk-news">${m.news?.length ? `<div class="stories">${m.news.map((s) => storyHTML(s, "markets")).join("")}</div>`
-        : notice("", "info", "<b>No market news cleared the bar today.</b> Nothing from the Fed, regulators or tracked companies met the threshold.")}</div>
-
-      <h3 class="sub-head" id="sec-mk-cal">Today's calendar <span class="meta">In trading-day order</span></h3>
-      ${cal.length ? `<ol class="timeline">${cal.map((e) => {
-        const slot = slotName(e), head = slot !== lastSlot ? `<span class="slot">${esc(slot)}</span>` : ""; lastSlot = slot;
-        return `<li class="t-${e.type}">${head}<div class="ev"><p class="what"><span class="ev-type">${e.type === "earnings" ? "Earnings" : "Economic data"}</span>${esc(e.name)}</p>${e.why ? `<p class="expl">${esc(e.why)}</p>` : ""}</div></li>`;
-      }).join("")}</ol>` : notice("", "info", "No tracked economic releases or watched earnings today.")}
-
-      <h3 class="sub-head" id="sec-mk-watch">Watchlist <span class="meta">Filings and news naming these companies</span></h3>
-      ${!wl.length ? notice("", "info", `<b>No watchlist configured.</b> Add companies on the <a href="#watchlist">Watchlist</a> page to track their filings and news.`)
-        : `<div class="wl">${wl.map((w) => `<div class="wl-row${w.filings.length || w.mentions.length ? "" : " quiet"}">
-          <div class="wl-tk"><b>${esc(w.ticker)}</b><span>${esc(w.company)}</span></div>
-          <div class="wl-items">${!w.filings.length && !w.mentions.length ? `<p class="muted">No filings or stories in this window.</p>` : ""}
-            ${w.filings.map((f) => `<p class="wl-item"><span class="wl-k">Filing</span><a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(formName[f.form] || `Form ${f.form}`)}</a> <span class="muted num">${esc(shortDate(f.date))}</span>${f.explain ? `<span class="expl">${esc(f.explain)}</span>` : ""}</p>`).join("")}
-            ${w.mentions.map((x) => `<p class="wl-item"><span class="wl-k">News</span>${x.inBrief ? `<button class="jump" data-jump="${esc(x.id)}">${esc(x.title)}</button> <span class="muted">in this issue</span>`
-              : `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a> <span class="muted">${esc(x.source)}</span>`}</p>`).join("")}</div></div>`).join("")}</div>`}
-
-      ${m.explainer ? `<h3 class="sub-head">Worth understanding</h3><div class="explainer"><h4>${esc(m.explainer.q)}</h4><p>${esc(m.explainer.a)}</p><p class="ex">${esc(m.explainer.ex)}</p></div>` : ""}
+    const filings = (m.watchlist || []).flatMap((w) => w.filings.map((f) => ({ ...f, company: w.company })));
+    const news = (m.news || []).filter((s) => s.id !== skip);
+    if (!cal.length && !filings.length && !news.length) return "";
+    const row = (tag, body, note) => `<li><span class="tk num">${esc(tag)}</span><span>${body}${note ? `<span class="note">${esc(note)}</span>` : ""}</span></li>`;
+    return `<section class="sec" id="sec-markets" aria-labelledby="h-markets"><div class="ed-h"><h2 id="h-markets">${SEC.markets.title}</h2><small>News and events</small></div>
+      ${cal.length ? `<p class="sub-h">On the calendar today</p><ul class="rows">${cal.map((e) => row(e.type === "earnings" ? "EARN" : "MACRO", `${esc(e.name)}${e.timing ? ` · ${esc(slotName(e))}` : ""}`, e.why)).join("")}</ul>` : ""}
+      ${filings.length ? `<p class="sub-h">Watchlist filings</p><ul class="rows">${filings.map((f) => row(f.ticker, `<a href="${esc(f.url)}" target="_blank" rel="noopener">Form ${esc(f.form)}</a> · ${esc(f.date)}`, f.explain)).join("")}</ul>` : ""}
+      ${news.map((s) => storyHTML(s)).join("")}
     </section>`;
   }
-  function deepHTML(d) {
-    if (d == null) return ""; // not produced by the pipeline yet: say nothing rather than show an empty section
-    const st = S.items[d.id] || {};
-    return `<section class="sec sec-deep" id="sec-deep" aria-labelledby="h-deep">${secHead("deep", SEC.deep.title, "For this week")}
-      <article class="deep" id="s-${esc(d.id)}" data-id="${esc(d.id)}" tabindex="-1">
-        <div class="deep-time" aria-label="${esc(d.minutes)} minute read"><b class="num">${esc(d.minutes)}</b><span>min read</span></div>
-        <div class="deep-body">
-          <p class="lead-eyebrow"><span class="caps">Worth your time</span><span>${esc(d.topic)}</span></p>
-          <h3><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></h3>
-          <p class="story-meta">${fav(d.url)}<span class="src">${esc(d.source)}</span></p>
-          <p class="why-long">${esc(d.why)}</p>
-          <div class="actions deep-actions" data-for="${esc(d.id)}">
-            <button class="save-btn" data-act="save" aria-pressed="${!!st.saved}">${ic("saved")}<span>${st.saved ? "Saved for later" : "Save for later"}</span></button>
-            <a class="act" href="${esc(d.url)}" target="_blank" rel="noopener">${ic("ext")}Read it now<span class="vh"> (opens ${esc(host(d.url))} in a new tab)</span></a>
-            <button class="act" data-act="up" aria-pressed="${st.vote === 1}" aria-label="More like this">${ic("up")}</button>
-            <button class="act down" data-act="down" aria-pressed="${st.vote === -1}" aria-label="Less like this">${ic("down")}</button>
-          </div>
-          <div class="reasons" data-reasons="${esc(d.id)}" hidden>Optional reason:
-            ${["Not relevant to me", "Already read it", "Too long"].map((r) => `<button data-act="reason" data-reason="${esc(r)}">${esc(r)}</button>`).join("")}</div>
-        </div>
-      </article></section>`;
-  }
 
-  // ---------- pages ----------
   function readMinutes(b) {
     const words = allStories(b).reduce((w, s) => w + `${s.title} ${s.summary || ""} ${s.why}`.split(/\s+/).length, 0)
       + (b.markets ? 80 : 0) + (b.deepRead ? 60 : 0);
@@ -327,34 +244,26 @@
 
   function todayPage() {
     const b = S.brief;
-    const byRank = (r) => { const t = b?.top?.[r - 1]; return t && allStories(b).find((x) => x.id === t.id); };
-    const ins = b?.insight && b.status !== "failed" ? b.insight : null;
-    const opener = ins ? `<div class="opener"><p class="opener-k">What matters this morning</p>
-        <p class="opener-t">${esc(ins.text)}</p>
-        <p class="opener-refs">${ins.refs.map((r) => { const x = byRank(r); return x ? `<button class="ref" data-jump="${esc(x.id)}" title="${esc(x.title)}"><span class="num">${r}</span>${esc(x.title.length > 44 ? x.title.slice(0, 42).trimEnd() + "…" : x.title)}</button>` : ""; }).join("")}</p></div>` : "";
-    const masthead = (dateline, status = "") => `<header class="mast">
-        <div class="mast-top">
-          <div class="wordmark"><p class="wm">Morning Brief</p><p class="desc">The systems &amp; markets brief</p></div>
-          ${toolsHTML}
-        </div>
-        <p class="dateline">${dateline}</p>${opener}${status}</header>`;
-    if (!b) return masthead(S.mode === "demo" ? `<span class="chip sample">Prototype</span> Empty state` : "No issue yet")
-      + (S.mode === "demo" ? emptyBrief("No issues yet", "This preview is showing the empty state. In the live app this appears before the first 6:00 AM run.")
-        : emptyBrief("No brief yet", `The first issue is built at ${esc(S.cfg?.delivery?.time || "6:00 AM PT")} on the next weekday. You can also run one now from the Worker's /run endpoint.`));
+    const mast = (title, meta, extra = "") => `<header class="mast ed-mast"><div class="ed-top"><h1>${title}</h1>${toolsHTML}</div><p class="ed-meta">${meta}</p>${extra}</header>`;
+    if (!b) return mast("Morning Brief", S.mode === "demo" ? "Prototype · empty state" : "No issue yet")
+      + emptyBrief("No brief yet", `The first issue is built at ${esc(S.cfg?.delivery?.time || "5:00 AM PT")} on the next weekday.`);
     const archived = S.viewing && S.viewing !== S.latestDate;
     const broken = b.status === "failed" || b.status === "running";
-    const dateline = [
-      `<b>${esc(longDate(b.date))}</b>`,
-      broken ? `Run started ${esc(tTime(b.generatedAt))} PT` : `Generated ${esc(tTime(b.generatedAt))} PT`,
-      broken ? "" : `<span><b class="num">${count(allStories(b).length, "story", "stories")}</b> · <span class="num">${readMinutes(b)}</span> min read</span>`,
-      S.mode === "demo" ? `<span class="chip sample">Sample issue</span>` : "",
-    ].filter(Boolean).join(`<span class="sep" aria-hidden="true"></span>`);
+    const lead = allStories(b).find((x) => x.id === b.top?.[0]?.id);
+    const n = allStories(b).length;
+    const meta = broken ? `Run started ${esc(tTime(b.generatedAt))} PT`
+      : `<b>${count(n, "story", "stories")}</b> · ${readMinutes(b)} min read · ready at ${esc(tTime(b.generatedAt))} PT${S.mode === "demo" ? " · sample issue" : ""}`;
     const status = b.status === "running" ? notice("", "info", "<b>Today's brief is being built.</b> Reload in a few minutes.")
-      : b.status === "failed" ? notice("bad", "alert", `<b>This brief failed to generate.</b> ${esc(b.error || "")} Retry from GitHub Actions → Morning Brief → Run workflow.`)
-      : "";
-    return masthead(dateline, `${archived ? notice("", "archive", `<b>Archived issue.</b> Shown exactly as it was published on ${esc(shortDate(b.date))}; it is not updated with newer information. <a href="#today">Go to today's brief</a>`) : ""}${status}`)
-      + (broken ? "" : `${topHTML(b)}${storySection("core", b.sections.core)}${storySection("ai", b.sections.ai)}${storySection("industry", b.sections.industry)}${marketsHTML(b)}${deepHTML(b.deepRead)}${archived ? "" : `<section class="done" id="done">
-        <span class="done-check" aria-hidden="true">${ic("check")}</span><h2>You're caught up.</h2><p>The next brief arrives on the next weekday at 5 AM.</p></section>`}`);
+      : b.status === "failed" ? notice("bad", "alert", `<b>This brief failed to generate.</b> ${esc(b.error || "")} Retry from GitHub Actions → Morning Brief → Run workflow.`) : "";
+    const ins = b.insight && !broken ? `<div class="ed-thread"><span>Today's thread</span>${esc(b.insight.text)}</div>` : "";
+    const arch = archived ? notice("", "archive", `<b>Archived issue</b> from ${esc(shortDate(b.date))}, shown as published. <a href="#today">Go to today's brief</a>`) : "";
+    return `<div class="ed">${mast(esc(longDate(b.date)), meta, arch + status + ins)}`
+      + (broken ? "" : `${lead ? `<section class="sec" id="sec-top" aria-label="Lead story">${storyHTML(lead, true)}</section>` : ""}
+        ${storySection("core", b.sections.core, lead?.id)}${storySection("ai", b.sections.ai, lead?.id)}${storySection("industry", b.sections.industry, lead?.id)}${marketsHTML(b, lead?.id)}
+        ${n ? "" : `<p class="none">No stories in this issue.</p>`}
+        ${archived ? "" : `<section class="done" id="done"><span class="done-check" aria-hidden="true">${ic("check")}</span><h2>You're caught up.</h2><p>The next brief arrives on the next weekday at 5 AM.</p></section>`}
+        <p class="ed-foot">${b.sourcesChecked ? `${b.sourcesChecked - (b.missing || []).length} of ${b.sourcesChecked} sources fetched` : ""}${b.missing?.length ? ` · <span class="warn">unavailable: ${esc(b.missing.map((x) => x.split(" (")[0]).join(", "))}</span>` : ""}</p>`)
+      + `</div>`;
   }
   const AUTH_ERR = { expired: "That sign-in took too long. Try again.", failed: "GitHub didn't complete the sign-in. Try again.", denied: "That GitHub account doesn't have access to this brief." };
   const signIn = () => {
@@ -487,8 +396,8 @@
   function railHTML() {
     const b = S.brief;
     if (!(S.route === "today" || S.route.startsWith("brief-")) || !b || b.status === "failed" || b.status === "running") return "";
-    const secs = [["top", "Top stories", b.top.length], ["core", "Core tech", b.sections.core?.length], ["ai", "AI &amp; infra", b.sections.ai?.length],
-      ["industry", "Industry", b.sections.industry?.length], ["markets", "Markets", b.markets?.news?.length], ["deep", "Deep read", b.deepRead ? 1 : null]];
+    const secs = [["top", "Lead story", b.top.length ? 1 : null], ["core", "Core tech", b.sections.core?.length], ["ai", "AI &amp; infra", b.sections.ai?.length],
+      ["industry", "Industry", b.sections.industry?.length], ["markets", "Markets", b.markets?.news?.length]];
     const total = b.sourcesChecked || 0, miss = b.missing?.length || 0, ok = Math.max(0, total - miss);
     return `<div><h2>In this brief</h2><ul class="toc">${secs.map(([id, l, c]) => `<li><a href="#" data-sec="${id}" class="${c == null ? "off" : ""}"><span>${l}</span><span class="n num">${c == null ? "–" : c}</span></a></li>`).join("")}</ul>
         <div class="progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress"></i></div></div>
@@ -544,7 +453,7 @@
     else if (S.route === "settings") html = settingsPage();
     else html = emptyBrief("Page not found", `<a href="#today">Go to today's brief</a>`);
 
-    const isIssue = /<header class="mast">/.test(html);
+    const isIssue = /<header class="mast/.test(html);
     main.innerHTML = `${demoBarHTML()}${isIssue ? "" : `<div class="page-tools">${toolsHTML}</div>`}${html}`;
     $("#rail").innerHTML = railHTML();
     document.title = S.brief && (S.route === "today" || S.route.startsWith("brief-")) ? `Morning Brief · ${shortDate(S.brief.date)}` : `Morning Brief · ${(NAV.find(([r]) => r === S.route) || [, "Archive"])[1]}`;
