@@ -1,6 +1,6 @@
 import { config } from "./config.ts";
 import { insight, judge } from "./llm.ts";
-import { fetchMarkets, type MarketEnv } from "./markets.ts";
+import type { MarketEnv } from "./markets.ts";
 import { plain, render } from "./render.ts";
 import { toUi } from "./ui.ts";
 import { fetchSource } from "./sources.ts";
@@ -76,13 +76,13 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     const top = [...core, ...ai, ...industry, ...marketNews].sort((a, b) => b.score - a.score).slice(0, config.caps.top);
 
     const connection = await insight((m, i) => env.AI.run(m as any, i as any), top);
-    const markets = await fetchMarkets(env, now, since);
-    missing.push(...markets.missing);
+    // ponytail: markets are off until investing comes back; fetchMarkets in markets.ts still works, call it here to restore.
+    const markets = { macro: [], earnings: [], filings: [], missing: [] as string[] };
 
     // render + store (the app reads `data`; the email is `html`)
     const brief = { date, top, core, ai, industry, marketNews, markets, missing };
     const html = render(brief, env.BASE_URL, env.ACCESS_KEY);
-    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: config.sources.length + 3, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
+    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: config.sources.length, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
     const shown = new Set([...core, ...ai, ...industry, ...marketNews].map((c) => c.id));
     await env.DB.batch([
       ...judged.map((j) => env.DB.prepare(

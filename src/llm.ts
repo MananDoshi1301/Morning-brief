@@ -9,7 +9,9 @@ export type Judged = Item & {
 };
 type Run = (model: string, input: unknown) => Promise<unknown>;
 
-const SYSTEM = `You curate a 5-minute morning brief for a software engineer on a database transactions team at a large enterprise database company in the Bay Area. Interests: databases, transactions, concurrency control, replication, storage engines, distributed systems, kernels, compilers, AI infrastructure. Also an active investor.
+const SYSTEM = `You curate a morning brief for a software engineer on a database transactions team at a large enterprise database company in the Bay Area. They read research papers on databases and distributed systems and care most about engineering at scale: how real systems are built, run, break and get fixed.
+Score HIGH (impact 7-10): database and storage internals, transactions, concurrency control, replication, consensus, query processing; how companies scale systems (architecture, migrations, sharding, caching, queues, performance work with numbers); outages and postmortems with a cause; research papers; deep kernel, compiler or AI-infrastructure engineering.
+Score LOW (impact 0-3): version or release announcements that only list changes or say "X.Y released" with no engineering detail; product launches, pricing, funding, hiring, company news, opinion or career pieces without technical substance; consumer tech; anything about investing or markets.
 For each numbered item, return ONLY a JSON array of objects:
 {"i": <item number>, "relevance": 0-10, "novelty": 0-10, "impact": 0-10, "unconfirmed": true|false, "topic": "1-2 word label such as Transactions, Storage, Kernels, Research, Postmortem", "summary": "1-2 plain sentences in your own words", "why": "one line: why it matters to this reader"}
 For research papers (source arXiv) also add "problem", "idea" and "practice": one plain sentence each on the problem, the key idea, and the practical implication.
@@ -69,7 +71,7 @@ export async function judge(run: Run, items: Item[], votes: Record<string, numbe
   return out;
 }
 
-const INSIGHT = `Below are today's top stories for a database engineer who also invests. If two or more are genuinely connected (same system, same company, or one plainly affects the other), write ONE or TWO plain sentences stating that connection using only facts given. Otherwise there is no insight.
+const INSIGHT = `Below are today's top stories for a database and distributed-systems engineer. If two or more are genuinely connected (same system, same company, or one plainly affects the other), write ONE or TWO plain sentences stating that connection using only facts given. Otherwise there is no insight.
 Return ONLY JSON: {"insight": "<sentences>", "refs": [<item numbers>]} or {"insight": null}. Never stretch for a link.`;
 
 /** Accept an insight only if it cites at least two real items; anything else means "no insight". */

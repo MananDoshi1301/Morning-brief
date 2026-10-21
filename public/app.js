@@ -371,14 +371,13 @@
         ${row("Weekday time", "Monday to Friday", esc(c.delivery?.time || "6:00 AM PT"), "Failure alert is sent 20 minutes later if the brief hasn't gone out.")}
         ${row("Weekend digest", "Week in review and saved reads", "Off. Not built yet.", "")}
         ${row("Interests &amp; priorities", "", `${(c.topics || []).length} topics, ${(c.sources || []).length} sources. <a href="#sources">View sources &amp; topics</a>`, "Thumbs up and down adjust a source's weight in future briefs.")}
-        ${row("Watchlist", "", `${(c.watchlist || []).map((w) => esc(w.ticker)).join(", ") || "None"}. <a href="#watchlist">View watchlist</a>`, "Filings and news that name these companies are reported. No prices.")}
         ${row("Muted topics", "", (c.muted || []).map(esc).join(", ") || "None", "Muted items are dropped before scoring.")}
         ${row("Appearance", "This browser only", `<button class="icon-btn" data-act="theme" style="border-color:var(--line-strong)">${ic("moon")}<span>Switch light / dark</span></button>`, "")}
       </div>`;
   }
 
   // ---------- chrome ----------
-  const NAV = [["today", "Today", "today"], ["archive", "Archive", "archive"], ["saved", "Saved for later", "saved"], ["watchlist", "Watchlist", "watch"], ["sources", "Sources & topics", "sources"], ["settings", "Settings", "settings"]];
+  const NAV = [["today", "Today", "today"], ["archive", "Archive", "archive"], ["saved", "Saved for later", "saved"], ["sources", "Sources & topics", "sources"], ["settings", "Settings", "settings"]];
 
   function navHTML() {
     const b = S.brief, cur = S.route.startsWith("brief-") ? "archive" : S.route;
@@ -397,7 +396,7 @@
     const b = S.brief;
     if (!(S.route === "today" || S.route.startsWith("brief-")) || !b || b.status === "failed" || b.status === "running") return "";
     const secs = [["top", "Lead story", b.top.length ? 1 : null], ["core", "Core tech", b.sections.core?.length], ["ai", "AI &amp; infra", b.sections.ai?.length],
-      ["industry", "Industry", b.sections.industry?.length], ["markets", "Markets", b.markets?.news?.length]];
+      ["industry", "Industry", b.sections.industry?.length]];
     const total = b.sourcesChecked || 0, miss = b.missing?.length || 0, ok = Math.max(0, total - miss);
     return `<div><h2>In this brief</h2><ul class="toc">${secs.map(([id, l, c]) => `<li><a href="#" data-sec="${id}" class="${c == null ? "off" : ""}"><span>${l}</span><span class="n num">${c == null ? "–" : c}</span></a></li>`).join("")}</ul>
         <div class="progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress"></i></div></div>
