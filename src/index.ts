@@ -69,6 +69,8 @@ const sessionCookie = (env: Env) => `mb=${encodeURIComponent(env.ACCESS_KEY)}; P
 
 /** GitHub OAuth: a sign-in by GITHUB_USER gets the same session cookie as the email link. */
 async function githubAuth(url: URL, req: Request, env: Env): Promise<Response> {
+  if (url.pathname === "/auth/logout" && req.method === "POST")
+    return new Response(null, { status: 303, headers: { location: `${url.origin}/`, "set-cookie": "mb=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0" } });
   if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET || !env.GITHUB_USER || !env.ACCESS_KEY) return new Response("GitHub sign-in not configured", { status: 404 });
   const redirect = `${url.origin}/auth/callback`;
   if (url.pathname === "/auth/github") {

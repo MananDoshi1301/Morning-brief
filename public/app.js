@@ -490,7 +490,7 @@
     return `<a class="brand" href="#today"><span class="brand-mark">Morning <span>Brief</span></span></a>
       <button class="icon-btn nav-close" data-act="menu" aria-label="Close menu" style="position:absolute;right:var(--s4);top:calc(var(--s4) + env(safe-area-inset-top, 0px))" hidden>${ic("close")}</button>
       <ul>${NAV.map(([r, label, i]) => `<li><a class="nav-link" href="#${r}" ${cur === r ? 'aria-current="page"' : ""}>${ic(i)}${esc(label)}${r === "saved" ? `<span class="count num" id="nav-saved-count">${savedCount() || ""}</span>` : ""}</a></li>`).join("")}</ul>
-      <div class="nav-foot">${foot}</div>`;
+      <div class="nav-foot">${foot}${S.mode === "live" ? `<form method="post" action="/auth/logout"><button class="jump">Sign out</button></form>` : ""}</div>`;
   }
 
   function railHTML() {
