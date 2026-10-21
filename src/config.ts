@@ -33,8 +33,10 @@ export const config = {
     "scale", "scaling", "latency", "throughput", "shard", "partition", "cache", "caching", "kafka", "queue",
     "stream", "index", "reliability", "availability", "durability", "migration", "infrastructure", "architecture",
     "performance", "observability", "storage", "data platform", "data center", "distributed", "load balanc",
+    // status pages: keep incidents, skip notices
+    "degraded", "disruption", "elevated error", "unavailable", "increased error", "root cause", "resolved",
   ],
-  muted: ["crypto airdrop", "sponsored"],
+  muted: ["crypto airdrop", "sponsored", "scheduled maintenance", "maintenance window"],
 
   sources: [
     { id: "Hacker News", kind: "hn", tier: 3, minPoints: 150, filter: true },
@@ -64,6 +66,15 @@ export const config = {
     { id: "Neon", kind: "feed", url: "https://neon.com/blog/rss.xml", tier: 2, filter: true },
     { id: "TigerBeetle", kind: "feed", url: "https://tigerbeetle.com/blog/atom.xml", tier: 1 },
     { id: "InfoQ Architecture", kind: "feed", url: "https://www.infoq.com/feed/?topic=architecture-design", tier: 2, filter: true },
+
+    // What happened: official incident reports and postmortems from the big providers
+    { id: "Google Cloud status", kind: "feed", url: "https://status.cloud.google.com/en/feed.atom", tier: 1 },
+    { id: "AWS Health", kind: "feed", url: "https://status.aws.amazon.com/rss/all.rss", tier: 1, filter: true },
+    { id: "GitHub status", kind: "feed", url: "https://www.githubstatus.com/history.rss", tier: 1, filter: true },
+    { id: "GitHub availability reports", kind: "feed", url: "https://github.blog/tag/github-availability-report/feed/", tier: 1 },
+    { id: "Cloudflare postmortems", kind: "feed", url: "https://blog.cloudflare.com/tag/post-mortem/rss/", tier: 1 },
+    { id: "Cloudflare outage reports", kind: "feed", url: "https://blog.cloudflare.com/tag/outage/rss/", tier: 1 },
+    { id: "Slack status", kind: "feed", url: "https://slack-status.com/feed/rss", tier: 1, filter: true },
 
     // People who write deeply about databases and distributed systems
     { id: "All Things Distributed", kind: "feed", url: "https://www.allthingsdistributed.com/atom.xml", tier: 2 },
