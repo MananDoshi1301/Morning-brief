@@ -9,6 +9,7 @@ export interface Env extends PipelineEnv {
   EMAIL_FROM: string;
   EMAIL_TO: string;
   ASSETS: Fetcher;
+  GITHUB_CLIENT_ID?: string; GITHUB_CLIENT_SECRET?: string; GITHUB_USER?: string; // unset = GitHub sign-in off
 }
 
 function b64(s: string) {
@@ -52,17 +53,47 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     const isPrivate = url.pathname.startsWith("/api/") || url.pathname === "/run" || url.pathname === "/fb";
+    if (url.pathname.startsWith("/auth/")) return githubAuth(url, req, env);
     if (!isPrivate) return env.ASSETS.fetch(req); // the app shell has no data in it
     // The key arrives once in an email link (?k=) and is then kept in a cookie.
     const cookieKey = /(?:^|;\s*)mb=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1];
     const given = url.searchParams.get("k") ?? (cookieKey && decodeURIComponent(cookieKey));
     if (!env.ACCESS_KEY || given !== env.ACCESS_KEY) return Response.json({ error: "forbidden" }, { status: 403 });
     const res = await route(url, req, env);
-    if (url.searchParams.has("k"))
-      res.headers.append("set-cookie", `mb=${encodeURIComponent(env.ACCESS_KEY)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000`);
+    if (url.searchParams.has("k")) res.headers.append("set-cookie", sessionCookie(env));
     return res;
   },
 };
+
+const sessionCookie = (env: Env) => `mb=${encodeURIComponent(env.ACCESS_KEY)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=31536000`;
+
+/** GitHub OAuth: a sign-in by GITHUB_USER gets the same session cookie as the email link. */
+async function githubAuth(url: URL, req: Request, env: Env): Promise<Response> {
+  if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET || !env.GITHUB_USER || !env.ACCESS_KEY) return new Response("GitHub sign-in not configured", { status: 404 });
+  const redirect = `${url.origin}/auth/callback`;
+  if (url.pathname === "/auth/github") {
+    const state = crypto.randomUUID();
+    const to = `https://github.com/login/oauth/authorize?client_id=${env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirect)}&state=${state}&scope=`;
+    return new Response(null, { status: 302, headers: { location: to, "set-cookie": `mbs=${state}; Path=/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=600` } });
+  }
+  if (url.pathname !== "/auth/callback") return new Response("Not found", { status: 404 });
+  const state = /(?:^|;\s*)mbs=([^;]+)/.exec(req.headers.get("cookie") ?? "")?.[1];
+  const code = url.searchParams.get("code");
+  if (!code || !state || url.searchParams.get("state") !== state) return new Response("Sign-in expired, try again", { status: 400 });
+  const tok: any = await (await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST", headers: { accept: "application/json", "content-type": "application/json" },
+    body: JSON.stringify({ client_id: env.GITHUB_CLIENT_ID, client_secret: env.GITHUB_CLIENT_SECRET, code, redirect_uri: redirect }),
+  })).json();
+  if (!tok.access_token) return new Response("GitHub sign-in failed", { status: 502 });
+  const user: any = await (await fetch("https://api.github.com/user", {
+    headers: { authorization: `Bearer ${tok.access_token}`, "user-agent": "morning-brief" },
+  })).json();
+  if (String(user.login ?? "").toLowerCase() !== env.GITHUB_USER.toLowerCase()) return new Response("This GitHub account isn't allowed", { status: 403 });
+  const h = new Headers({ location: `${url.origin}/#today` });
+  h.append("set-cookie", sessionCookie(env));
+  h.append("set-cookie", "mbs=; Path=/auth; Max-Age=0");
+  return new Response(null, { status: 302, headers: h });
+}
 
 async function route(url: URL, req: Request, env: Env): Promise<Response> {
   if (url.pathname === "/run" && req.method === "POST") return Response.json(await buildBrief(env, Date.now(), true, mailer(env)));

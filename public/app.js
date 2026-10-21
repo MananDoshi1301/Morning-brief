@@ -530,7 +530,7 @@
       <button class="icon-btn" data-act="help" aria-label="Keyboard shortcuts">${ic("key")}</button></div>`;
     let html;
     if (S.mode === "loading" || (S.mode === "demo" && S.variant === "loading")) html = skeleton();
-    else if (S.mode === "locked") html = emptyBrief("Sign in to read your brief", "Open the link from your morning email once. It contains your access key, and this browser stays signed in after that.");
+    else if (S.mode === "locked") html = emptyBrief("Sign in to read your brief", `<a class="act" href="/auth/github">Sign in with GitHub</a></p><p>Or open the link from your morning email once. This browser stays signed in after that.`);
     else if (S.mode === "error") html = notice("bad", "alert", `<b>The brief couldn't load.</b> ${esc(S.error)}. Reload the page; if it persists, check the Worker logs.`);
     else if (S.route === "today" || S.route.startsWith("brief-")) html = todayPage();
     else if (S.route === "archive") html = await archivePage();
