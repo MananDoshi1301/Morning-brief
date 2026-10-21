@@ -41,7 +41,7 @@ const env = {
 const now = Date.now(), force = process.env.FORCE === "1";
 const { hour, weekday } = local(now);
 // Both UTC crons fire; only the one landing at 5 AM PT (5 not 6: GitHub cron often starts late) runs.
-if (!force && (weekday === "Sat" || weekday === "Sun" || hour !== 5)) {
+if (!force && (weekday === "Sat" || weekday === "Sun" || hour < 5)) { // GitHub often starts scheduled runs hours late; buildBrief skips a day already built
   console.log(`skip: ${weekday} ${hour}:00 PT`);
   process.exit(0);
 }
