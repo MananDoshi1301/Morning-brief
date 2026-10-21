@@ -15,6 +15,9 @@ export const config = {
   llmModel: "@cf/meta/llama-3.1-8b-instruct-fast",
   maxLlmItems: 120, // ~15 model calls; still a small share of the free 10k neurons/day
   minScore: 6, // 0-10; anything below is dropped even if a section ends up short
+  perSource: 3, // no one source fills a section (arXiv alone can bring 60 papers)
+  // Bare version announcements ("OpenBSD 8.0 released"): dropped before the model sees them.
+  releaseNoise: /\b\d+(\.\d+)+\b.*\b(released|is out|now available)\b|^(release|version) v?\d/i,
   caps: { top: 5, core: 14, ai: 4, industry: 5, markets: 0 },
 
   // Interest keywords. Sources with `filter: true` only keep items matching one.

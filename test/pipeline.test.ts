@@ -84,3 +84,11 @@ test("insight is kept only when it cites two or more real Top 5 items", async ()
   assert.equal(parseInsight('{"insight":null}', 5), null);
   assert.equal(parseInsight("no json here", 5), null);
 });
+
+test("release-noise filter drops bare version announcements only", async () => {
+  const { config } = await import("../src/config.ts");
+  for (const t of ["OpenBSD 8.0 released", "Rust 1.92.0 is out", "Release v2.3.1", "DuckDB 1.4 now available"])
+    assert.ok(config.releaseNoise.test(t), t);
+  for (const t of ["Google Cloud says a 'power event' caused today's outage", "How we scaled Postgres to 10 TB", "Migrating 119 TB from Exadata"])
+    assert.ok(!config.releaseNoise.test(t), t);
+});
