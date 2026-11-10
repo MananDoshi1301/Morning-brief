@@ -21,10 +21,12 @@ export interface PipelineEnv extends MarketEnv {
 async function learnToday(env: PipelineEnv) {
   if (!env.DEEPSTACK_URL || !env.DEEPSTACK_TOKEN) return null;
   try {
-    const r = await fetch(`${env.DEEPSTACK_URL.replace(/\/$/, "")}/api/today`, {
+    const base = env.DEEPSTACK_URL.replace(/\/$/, "");
+    const r = await fetch(`${base}/api/today`, {
       headers: { authorization: `Bearer ${env.DEEPSTACK_TOKEN}` }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json() as { video: unknown; paper: unknown };
+    const j = await r.json() as { video: { url: string } | null; paper: unknown };
+    if (j.video) j.video = { ...j.video, url: `${base}/tonight` }; // the TV page plays it and resumes
     return j.video || j.paper ? j : null;
   } catch (e) {
     console.error("deepstack:", (e as Error).message);
