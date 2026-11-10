@@ -25,8 +25,10 @@ async function learnToday(env: PipelineEnv) {
     const r = await fetch(`${base}/api/today`, {
       headers: { authorization: `Bearer ${env.DEEPSTACK_TOKEN}` }, signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json() as { video: { url: string } | null; paper: unknown };
+    const j = await r.json() as { video: { url: string } | null; paper: { url: string } | null; days?: { day: string; learned: boolean }[] };
     if (j.video) j.video = { ...j.video, url: `${base}/tonight` }; // the TV page plays it and resumes
+    if (j.paper) j.paper = { ...j.paper, url: `${base}/api/go?u=${encodeURIComponent(j.paper.url)}` }; // counts the open, then the paper
+    if (j.days) j.days = j.days.slice(0, 7); // the 7 days before this morning: today has barely started
     return j.video || j.paper ? j : null;
   } catch (e) {
     console.error("deepstack:", (e as Error).message);

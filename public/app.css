@@ -379,3 +379,8 @@ kbd { font: 500 12.5px/1 var(--sans); border: 1px solid var(--line-strong); bord
 .learn-item b { display: block; margin: 4px 0; }
 .learn-item span:last-child { color: var(--flat); font-size: .95em; }
 .learn-kind { font: 600 12px/1 var(--sans); color: var(--accent); }
+
+.learn-week { margin: 0; display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--flat); }
+.learn-week i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line-strong); }
+.learn-week i.on { background: var(--accent); border-color: var(--accent); }
+.learn-week span { margin-left: 6px; }

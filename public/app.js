@@ -257,7 +257,9 @@
     const ins = b.insight && !broken ? `<div class="ed-thread"><span>Today's thread</span>${esc(b.insight.text)}</div>` : "";
     const L = b.learn && !archived ? b.learn : null;
     const pick = (x, kind) => x ? `<a class="learn-item" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="learn-kind">${kind}${x.minutes ? ` · ${x.minutes} min` : ""}</span><b>${esc(x.title)}</b>${x.hook ? `<span>${esc(x.hook)}</span>` : ""}</a>` : "";
-    const learn = L ? `<section class="learn" aria-label="Today's 2 minutes"><p class="learn-h">Today's 2 minutes</p>${pick(L.paper, "Read the abstract")}${pick(L.video, "Tonight's video")}</section>` : "";
+    const lw = L?.days?.length ? L.days.filter((d) => d.learned).length : null;
+    const week = lw == null ? "" : `<p class="learn-week" aria-label="Learned on ${lw} of the last 7 days">${L.days.map((d) => `<i class="${d.learned ? "on" : ""}" title="${esc(d.day)}"></i>`).join("")}<span>${lw} of the last 7 days</span></p>`;
+    const learn = L ? `<section class="learn" aria-label="Today's 2 minutes"><p class="learn-h">Today's 2 minutes</p>${week}${pick(L.paper, "Read the abstract")}${pick(L.video, "Tonight's video")}</section>` : "";
     const arch = archived ? notice("", "archive", `<b>Archived issue</b> from ${esc(shortDate(b.date))}, shown as published. <a href="#today">Go to today's brief</a>`) : "";
     return `<div class="ed">${mast(esc(longDate(b.date)), meta, arch + status + learn + ins)}`
       + (broken ? "" : `${lead ? `<section class="sec" id="sec-top" aria-label="Lead story">${storyHTML(lead, true)}</section>` : ""}
