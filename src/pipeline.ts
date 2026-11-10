@@ -14,6 +14,22 @@ export interface PipelineEnv extends MarketEnv {
   AI: Ai;
   BASE_URL: string; // e.g. https://morning-brief.<you>.workers.dev
   ACCESS_KEY: string; // guards /run and feedback links
+  DEEPSTACK_URL?: string; DEEPSTACK_TOKEN?: string; // unset = no "Today's 2 minutes" block
+}
+
+// One short video and one paper from DeepStack (which mirrors PaperGraph). Never fails the brief.
+async function learnToday(env: PipelineEnv) {
+  if (!env.DEEPSTACK_URL || !env.DEEPSTACK_TOKEN) return null;
+  try {
+    const r = await fetch(`${env.DEEPSTACK_URL.replace(/\/$/, "")}/api/today`, {
+      headers: { authorization: `Bearer ${env.DEEPSTACK_TOKEN}` }, signal: AbortSignal.timeout(15000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json() as { video: unknown; paper: unknown };
+    return j.video || j.paper ? j : null;
+  } catch (e) {
+    console.error("deepstack:", (e as Error).message);
+    return null;
+  }
 }
 
 export type Send = (subject: string, html: string) => Promise<void>;
@@ -87,6 +103,7 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     const marketNews = of("markets").slice(0, config.caps.markets);
     const top = [...core, ...ai, ...industry, ...marketNews].filter((j) => !isPaper(j)).sort((a, b) => b.score - a.score).slice(0, config.caps.top);
 
+    const learn = await learnToday(env);
     const connection = await insight((m, i) => env.AI.run(m as any, i as any), top);
     // ponytail: markets are off until investing comes back; fetchMarkets in markets.ts still works, call it here to restore.
     const markets = { macro: [], earnings: [], filings: [], missing: [] as string[] };
@@ -94,7 +111,7 @@ export async function buildBrief(env: PipelineEnv, now = Date.now(), force = fal
     // render + store (the app reads `data`; the email is `html`)
     const brief = { date, top, core, ai, industry, marketNews, markets, missing };
     const html = render(brief, env.BASE_URL, env.ACCESS_KEY);
-    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: L.sources.length, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection });
+    const data = toUi({ date, generatedAt: Date.now(), window: { from: since, to: now }, sourcesChecked: L.sources.length, core, ai, industry, marketNews, judged, top, markets, missing, insight: connection, learn });
     const shown = new Set([...core, ...ai, ...industry, ...marketNews].map((c) => c.id));
     await env.DB.batch([
       ...judged.map((j) => env.DB.prepare(

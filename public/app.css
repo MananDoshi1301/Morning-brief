@@ -370,3 +370,12 @@ kbd { font: 500 12.5px/1 var(--sans); border: 1px solid var(--line-strong); bord
 .ed-foot .warn { color: var(--warn); }
 .ed .done { border-top-color: var(--text); padding-bottom: var(--s4); }
 @media (max-width: 600px) { .ed-top h1 { font-size: 28px; } .ed .is-lead .story-title { font-size: 24px; } .ed .story-title { font-size: 19px; } }
+
+/* Today's 2 minutes: one paper and one video from DeepStack, above the news */
+.learn { margin-top: var(--s4); display: grid; gap: 10px; }
+.learn-h { margin: 0; font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.learn-item { display: block; padding: 12px 14px; border: 1px solid var(--accent-soft); border-left: 3px solid var(--accent); border-radius: var(--r); color: inherit; text-decoration: none; }
+.learn-item:hover { background: var(--accent-soft); }
+.learn-item b { display: block; margin: 4px 0; }
+.learn-item span:last-child { color: var(--flat); font-size: .95em; }
+.learn-kind { font: 600 12px/1 var(--sans); color: var(--accent); }

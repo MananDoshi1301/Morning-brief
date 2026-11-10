@@ -185,7 +185,6 @@
   const pub = (ms) => (ms ? `<time datetime="${new Date(ms).toISOString()}">${esc(tDayTime(ms))} PT</time>` : `<span class="muted">publication time not given</span>`);
   // Real publisher icon from the story's own domain; hidden if it doesn't load. Never shown for fictional prototype links.
   const fav = (url) => (S.mode === "live" && host(url) ? `<img class="fav" src="https://icons.duckduckgo.com/ip3/${esc(host(url))}.ico" alt="" width="14" height="14" loading="lazy" onerror="this.remove()">` : "");
-  const whyHTML = (why) => `<p class="story-why"><b>Why it matters:</b> ${esc(why)}</p>`;
 
   // Paper / incident / release detail stays one tap away; every story keeps the same shape.
   function notesHTML(s) {
@@ -203,7 +202,6 @@
       ${kickerHTML(s, lead ? `<span class="topic">Lead ·</span>` : "")}
       <h3 class="story-title"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></h3>
       <p class="story-sum">${esc(s.summary || s.paper?.idea || "")}</p>
-      ${whyHTML(s.why)}
       ${notesHTML(s)}
       ${s.related?.length ? `<p class="related">Also covered by ${s.related.map((r) => `<a href="${esc(r.url)}" target="_blank" rel="noopener" title="${esc(r.title)}">${esc(r.source)}</a>`).join(", ")}</p>` : ""}
       <div class="story-foot">${metaHTML(s)}${actionsHTML(s)}</div>
@@ -238,7 +236,7 @@
   }
 
   function readMinutes(b) {
-    const words = allStories(b).reduce((w, s) => w + `${s.title} ${s.summary || ""} ${s.why}`.split(/\s+/).length, 0)
+    const words = allStories(b).reduce((w, s) => w + `${s.title} ${s.summary || ""}`.split(/\s+/).length, 0)
       + (b.markets ? 80 : 0) + (b.deepRead ? 60 : 0);
     return Math.max(1, Math.round(words / 230));
   }
@@ -257,8 +255,11 @@
     const status = b.status === "running" ? notice("", "info", "<b>Today's brief is being built.</b> Reload in a few minutes.")
       : b.status === "failed" ? notice("bad", "alert", `<b>This brief failed to generate.</b> ${esc(b.error || "")} Retry from GitHub Actions → Morning Brief → Run workflow.`) : "";
     const ins = b.insight && !broken ? `<div class="ed-thread"><span>Today's thread</span>${esc(b.insight.text)}</div>` : "";
+    const L = b.learn && !archived ? b.learn : null;
+    const pick = (x, kind) => x ? `<a class="learn-item" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="learn-kind">${kind}${x.minutes ? ` · ${x.minutes} min` : ""}</span><b>${esc(x.title)}</b>${x.hook ? `<span>${esc(x.hook)}</span>` : ""}</a>` : "";
+    const learn = L ? `<section class="learn" aria-label="Today's 2 minutes"><p class="learn-h">Today's 2 minutes</p>${pick(L.paper, "Read the abstract")}${pick(L.video, "Tonight's video")}</section>` : "";
     const arch = archived ? notice("", "archive", `<b>Archived issue</b> from ${esc(shortDate(b.date))}, shown as published. <a href="#today">Go to today's brief</a>`) : "";
-    return `<div class="ed">${mast(esc(longDate(b.date)), meta, arch + status + ins)}`
+    return `<div class="ed">${mast(esc(longDate(b.date)), meta, arch + status + learn + ins)}`
       + (broken ? "" : `${lead ? `<section class="sec" id="sec-top" aria-label="Lead story">${storyHTML(lead, true)}</section>` : ""}
         ${storySection("core", b.sections.core, lead?.id)}${storySection("ai", b.sections.ai, lead?.id)}${storySection("industry", b.sections.industry, lead?.id)}${marketsHTML(b, lead?.id)}
         ${n ? "" : `<p class="none">No stories in this issue.</p>`}
@@ -292,7 +293,7 @@
           <div>${i.lead ? `<p class="lead"><a href="#brief-${esc(i.date)}">${i.snippet ? i.snippet : esc(i.lead)}</a></p>` : `<p class="lead"><a href="#brief-${esc(i.date)}">Issue for ${esc(shortDate(i.date))}</a></p>`}
           <p class="sub">${i.status === "failed" ? `<span class="st bad">Generation failed</span>${i.error ? `<span>${esc(i.error)}</span>` : ""}` : `<span class="st ok">Delivered</span>`}
             ${i.missing ? `<span class="st warn">${i.missing} ${i.missing === 1 ? "source" : "sources"} unavailable</span>` : i.status !== "failed" ? "<span>All sources fetched</span>" : ""}</p></div></div>`).join("");
-    return `<header class="page-head"><h1>Archive</h1><p>Every past issue, kept as it was published. Search covers headlines, summaries and why-it-matters lines.</p></header>
+    return `<header class="page-head"><h1>Archive</h1><p>Every past issue, kept as it was published. Search covers headlines, and summaries.</p></header>
       <form class="toolbar" id="archive-form" role="search"><label class="vh" for="archive-q">Search past issues</label>
         <input type="search" id="archive-q" value="${esc(q)}" placeholder="Search past issues, e.g. MVCC or io_uring"><button class="icon-btn" type="submit">${ic("search")}<span>Search</span></button></form>
       ${body}`;

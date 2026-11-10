@@ -36,6 +36,7 @@ const env = {
   DB, AI,
   FRED_KEY: need("FRED_KEY"), SEC_USER_AGENT: need("SEC_USER_AGENT"), TWELVE_DATA_KEY: process.env.TWELVE_DATA_KEY,
   ACCESS_KEY: need("ACCESS_KEY"), BASE_URL: need("BASE_URL"),
+  DEEPSTACK_URL: process.env.DEEPSTACK_URL, DEEPSTACK_TOKEN: process.env.DEEPSTACK_TOKEN,
 } as unknown as PipelineEnv;
 
 const now = Date.now(), force = process.env.FORCE === "1";

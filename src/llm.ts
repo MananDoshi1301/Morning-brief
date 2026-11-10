@@ -14,7 +14,7 @@ const SYSTEM = `You curate a morning brief for a software engineer on a database
 Score HIGH (impact 7-10): database and storage internals, transactions, concurrency control, replication, consensus, query processing; how companies scale systems (architecture, migrations, sharding, caching, queues, performance work with numbers); outages and postmortems with a cause; deep kernel, compiler or AI-infrastructure engineering; what OpenAI, Anthropic, Google, Meta, Microsoft, Amazon, Nvidia, Apple and notable startups are doing: new models and what they can do, research results, strategy, big deals and shifts in the industry.
 Score LOW (impact 0-3): version or release announcements that only list changes or say "X.Y released" with no engineering detail; minor product tweaks, pricing, small funding rounds, hiring, opinion or career pieces without substance; consumer gadgets, politics, lawsuits and celebrity news; anything about investing or markets.
 For each numbered item, return ONLY a JSON array of objects:
-{"i": <item number>, "relevance": 0-10, "novelty": 0-10, "impact": 0-10, "unconfirmed": true|false, "topic": "1-2 word label such as Transactions, Storage, Kernels, Research, Postmortem", "summary": "1-2 plain sentences in your own words", "why": "one line: why it matters to this reader"}
+{"i": <item number>, "relevance": 0-10, "novelty": 0-10, "impact": 0-10, "unconfirmed": true|false, "topic": "1-2 word label such as Transactions, Storage, Kernels, Research, Postmortem", "summary": "2-3 plain sentences in your own words that make the reader want to open it: what this is and the most surprising or concrete thing in it"}
 For research papers (source arXiv) also add "problem", "idea" and "practice": one plain sentence each on the problem, the key idea, and the practical implication.
 For incident postmortems, add "trigger", "failure" and "lesson" (one sentence each) ONLY if the text states all three; otherwise omit them.
 For software releases, add "changed" (what changed) and "consequence" (the engineering consequence for someone running it), one sentence each.
@@ -55,9 +55,9 @@ export async function judge(run: Run, items: Item[], votes: Record<string, numbe
       if (!parsed.length) notes.push(`model reply unparsable on ${batch.length} items: ${JSON.stringify(res?.response ?? res).slice(0, 300)}`);
       for (const j of parsed) {
         const it = batch[Number(j.i) - 1];
-        if (!it || !j.summary || !j.why) continue; // no "why it matters" line, no slot in the brief
+        if (!it || !j.summary) continue;
         out.push({
-          ...it, summary: String(j.summary), why: String(j.why), unconfirmed: j.unconfirmed === true,
+          ...it, summary: String(j.summary), why: "", unconfirmed: j.unconfirmed === true,
           topic: String(j.topic || "").slice(0, 24),
           ...(j.problem && j.idea && j.practice ? { paper: { problem: String(j.problem), idea: String(j.idea), practice: String(j.practice) } } : {}),
           ...(j.trigger && j.failure && j.lesson ? { incident: { trigger: String(j.trigger), failure: String(j.failure), lesson: String(j.lesson) } } : {}),

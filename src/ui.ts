@@ -35,6 +35,7 @@ export function toUi(a: {
   date: string; generatedAt: number; window: { from: number; to: number }; sourcesChecked: number;
   core: Judged[]; ai: Judged[]; industry: Judged[]; marketNews: Judged[]; judged: Judged[]; top: Judged[]; markets: Markets; missing: string[];
   insight?: { text: string; refs: number[] } | null;
+  learn?: unknown;
 }) {
   const m = a.markets;
   const shown = new Set([...a.core, ...a.ai, ...a.industry, ...a.marketNews].map((j) => j.id));
@@ -46,6 +47,8 @@ export function toUi(a: {
     top: a.top.map((t) => ({ id: t.id, section: label.get(t.id) ?? "Core tech" })),
     // refs are 1-based Top 5 ranks; null means no connection worth stating
     insight: a.insight ?? null,
+    learn: a.learn ?? null, // DeepStack's { video, paper }: title, url, minutes, hook
+
     sections: { core: a.core.map(story), ai: a.ai.map(story), industry: a.industry.map(story) },
     deepRead: null,
     markets: {

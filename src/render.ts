@@ -10,7 +10,6 @@ function item(it: Judged, fb: (id: string, v: string) => string) {
   <h3><a href="${esc(it.url)}">${esc(it.title)}</a></h3>
   <p class="meta">${esc(it.source)} · ${fmtTime(it.published)}${also}${it.unconfirmed ? ' · <b class="warn">unconfirmed</b>' : ""}</p>
   <p>${esc(it.summary)}</p>
-  <p class="why">→ ${esc(it.why)}</p>
   <p class="fb"><a href="${fb(it.id, "up")}">👍</a> <a href="${fb(it.id, "down")}">👎</a> <a href="${fb(it.id, "save")}">Save</a></p>
 </article>`;
 }
@@ -33,7 +32,7 @@ article{padding:12px 0;border-bottom:1px solid #eee9df}article p{margin:4px 0}
 <h1>Morning Brief</h1><p class="meta">${b.date} · <a href="${base}/#brief-${b.date}">Open in the app</a> · <a href="${base}/#archive">Past issues</a></p>
 
 <h2>Top ${b.top.length} today</h2>
-${b.top.length ? `<ol>${b.top.map((t) => `<li><a href="${esc(t.url)}">${esc(t.title)}</a> — ${esc(t.why)}</li>`).join("")}</ol>` : `<p class="meta">Nothing cleared the bar today.</p>`}
+${b.top.length ? `<ol>${b.top.map((t) => `<li><a href="${esc(t.url)}">${esc(t.title)}</a></li>`).join("")}</ol>` : `<p class="meta">Nothing cleared the bar today.</p>`}
 
 <h2>Core tech &amp; engineering</h2>
 ${b.core.map((it) => item(it, fb)).join("") || `<p class="meta">Nothing cleared the bar today.</p>`}
@@ -54,5 +53,5 @@ ${b.missing.length ? `<h2>Missing today</h2><p class="meta">${b.missing.map(esc)
 
 /** Plain-text version for search indexing. */
 export function plain(b: Brief) {
-  return [...b.core, ...b.ai, ...b.industry, ...b.marketNews].map((i) => `${i.title}\n${i.summary}\n${i.why}`).join("\n\n");
+  return [...b.core, ...b.ai, ...b.industry, ...b.marketNews].map((i) => `${i.title}\n${i.summary}`).join("\n\n");
 }
